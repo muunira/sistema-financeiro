@@ -1,36 +1,22 @@
 {
   "version": 2,
   "builds": [
-    {
-      "src": "server.js",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "*.html",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "css/**",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "js/**",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "img/**",
-      "use": "@vercel/static"
-    }
+    { "src": "server.js", "use": "@vercel/node" },
+    { "src": "*.html", "use": "@vercel/static" },
+    { "src": "css/**", "use": "@vercel/static" },
+    { "src": "js/**", "use": "@vercel/static" },
+    { "src": "img/**", "use": "@vercel/static" }
   ],
   "routes": [
+    { "src": "/(.*)\\.html", "dest": "/$1.html" },
     { "src": "/css/(.*)", "dest": "/css/$1" },
     { "src": "/js/(.*)", "dest": "/js/$1" },
     { "src": "/img/(.*)", "dest": "/img/$1" },
     { "src": "/login", "methods": ["GET"], "dest": "/login.html" },
+    { "src": "/dashboard", "methods": ["GET"], "dest": "/dashboard.html" },
+    { "src": "/admin", "methods": ["GET"], "dest": "/admin.html" },
     { "src": "/login", "methods": ["POST"], "dest": "/server.js" },
-    { "src": "/dashboard", "dest": "/dashboard.html" },
-    { "src": "/admin", "dest": "/admin.html" },
     { "src": "/api/(.*)", "dest": "/server.js" },
-    { "src": "/(.*)", "dest": "/server.js" }
+    { "src": "/", "dest": "/server.js" }
   ]
 }
