@@ -17,33 +17,12 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function iniciarTempoReal() {
-    const eventSource = new EventSource('/api/events');
-
-    eventSource.addEventListener('novo_chamado', (e) => {
-        carregarDashboard();
-    });
-
-    eventSource.addEventListener('status_chamado', (e) => {
-        carregarDashboard();
-    });
-
-    eventSource.addEventListener('chamado_excluido', (e) => {
+    // Polling a cada 5 segundos (compatível com serverless)
+    setInterval(() => {
         carregarDashboard();
         atualizarContadorLixeira();
         if (lixeiraAberta) carregarLixeira();
-    });
-
-    eventSource.addEventListener('chamado_restaurado', (e) => {
-        carregarDashboard();
-        atualizarContadorLixeira();
-        if (lixeiraAberta) carregarLixeira();
-    });
-
-    eventSource.onerror = () => {
-        console.warn('SSE desconectado. Reconectando...');
-        eventSource.close();
-        setTimeout(iniciarTempoReal, 3000);
-    };
+    }, 5000);
 }
 
 function renderizarHeaderUsuario(sessao) {

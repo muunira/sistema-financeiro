@@ -1,5 +1,5 @@
 (function() {
-    let eventSource = null;
+    let ultimosChamadosIds = [];
 
     function tocarSomNotificacao() {
         const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -41,6 +41,28 @@
         }, 5000);
     }
 
+    async function verificarNovosChamados() {
+        try {
+            const resp = await fetch('/api/chamados');
+            const data = await resp.json();
+            if (!data.sucesso) return;
+
+            const idsAtuais = data.chamados.map(c => c.id);
+
+            if (ultimosChamadosIds.length > 0) {
+                const novos = data.chamados.filter(c => !ultimosChamadosIds.includes(c.id));
+                novos.forEach(chamado => {
+                    tocarSomNotificacao();
+                    mostrarNotificacaoGlobal(`🆕 Novo chamado #${chamado.numero} - ${chamado.problema}`);
+                });
+            }
+
+            ultimosChamadosIds = idsAtuais;
+        } catch(e) {
+            console.warn('Erro ao verificar novos chamados:', e);
+        }
+    }
+
     function iniciarNotificacoes() {
         const sessao = localStorage.getItem('ti_sessao');
         if (!sessao) return;
@@ -50,27 +72,9 @@
             if (!dados || !dados.usuario) return;
         } catch(e) { return; }
 
-        conectarSSE();
-    }
-
-    function conectarSSE() {
-        if (eventSource) {
-            eventSource.close();
-        }
-
-        eventSource = new EventSource('/api/events');
-
-        eventSource.addEventListener('novo_chamado', (e) => {
-            const chamado = JSON.parse(e.data);
-            tocarSomNotificacao();
-            mostrarNotificacaoGlobal(`🆕 Novo chamado #${chamado.numero} - ${chamado.problema}`);
-        });
-
-        eventSource.onerror = () => {
-            console.warn('Notificações: reconectando...');
-            eventSource.close();
-            setTimeout(conectarSSE, 3000);
-        };
+        // Polling a cada 5 segundos
+        verificarNovosChamados();
+        setInterval(verificarNovosChamados, 5000);
     }
 
     document.addEventListener('DOMContentLoaded', iniciarNotificacoes);
