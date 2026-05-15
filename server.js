@@ -47,7 +47,7 @@ function notificarClientes(evento, dados) {
 
 // Abre a página inicial
 app.get("/", (req, res) => {
-  res.redirect("/login.html");
+  res.redirect("/login");
 });
 
 // Inicialização das tabelas
