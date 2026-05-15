@@ -261,8 +261,11 @@ async function limparLixeira() {
   }
 }
 
-setInterval(limparLixeira, 60 * 60 * 1000);
-limparLixeira();
+// Em ambiente não-serverless, executa limpeza periódica
+if (process.env.NODE_ENV !== "production") {
+  setInterval(limparLixeira, 60 * 60 * 1000);
+  limparLixeira();
+}
 
 // Gerar próximo número de chamado
 app.get("/api/chamados/proximo-numero", async (req, res) => {
@@ -378,6 +381,12 @@ app.put("/api/usuarios/:id/senha", async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Servidor rodando em http://localhost:${PORT}`);
-});
+// Exporta para Vercel serverless
+module.exports = app;
+
+// Inicia servidor apenas localmente
+if (process.env.NODE_ENV !== "production") {
+  app.listen(PORT, () => {
+    console.log(`Servidor rodando em http://localhost:${PORT}`);
+  });
+}
