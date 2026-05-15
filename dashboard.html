@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Suporte TI</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/png" href="img/logo.png">
+    <link rel="shortcut icon" type="image/png" href="img/logo.png">
+    <link rel="apple-touch-icon" href="img/logo.png">
+</head>
+<body class="page-dashboard">
+
+    <header class="header header-dashboard">
+        <div class="header-content">
+            <div class="logo">
+                <div class="logo-icon">
+                    <img src="img/logo.png" alt="Logo">
+                </div>
+                <div>
+                    <h1>Dashboard TI - Porto Velho</h1>
+                    <span class="subtitle">Gerenciamento de Chamados</span>
+                </div>
+            </div>
+            <nav class="header-nav" id="headerNav"></nav>
+        </div>
+    </header>
+
+    <section class="stats-section">
+        <div class="stats-grid">
+            <div class="stat-card total">
+                <div class="stat-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14 2 14 8 20 8"/>
+                    </svg>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-number" id="totalChamados">0</span>
+                    <span class="stat-label">Total de Chamados</span>
+                </div>
+            </div>
+            <div class="stat-card abertos">
+                <div class="stat-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="12" y1="8" x2="12" y2="12"/>
+                        <line x1="12" y1="16" x2="12.01" y2="16"/>
+                    </svg>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-number" id="chamadosAbertos">0</span>
+                    <span class="stat-label">Abertos</span>
+                </div>
+            </div>
+            <div class="stat-card andamento">
+                <div class="stat-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="23 4 23 10 17 10"/>
+                        <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+                    </svg>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-number" id="chamadosAndamento">0</span>
+                    <span class="stat-label">Em Andamento</span>
+                </div>
+            </div>
+            <div class="stat-card resolvidos">
+                <div class="stat-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                        <polyline points="22 4 12 14.01 9 11.01"/>
+                    </svg>
+                </div>
+                <div class="stat-info">
+                    <span class="stat-number" id="chamadosResolvidos">0</span>
+                    <span class="stat-label">Resolvidos</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="table-section">
+        <div class="table-header">
+            <h2>Lista de Chamados</h2>
+            <div class="filtros">
+                <button class="btn-acao btn-excluir" onclick="toggleLixeira()" id="btnLixeira" style="padding:8px 16px; font-size:0.8rem; border-radius:8px; cursor:pointer; white-space:nowrap;">
+                    🗑 Lixeira (<span id="lixeiraBadge">0</span>)
+                </button>
+                <div class="filtro-group">
+                    <label>Status:</label>
+                    <select id="filtroStatus">
+                        <option value="todos">Todos</option>
+                        <option value="Aberto">Aberto</option>
+                        <option value="Em Andamento">Em Andamento</option>
+                        <option value="Resolvido">Resolvido</option>
+                    </select>
+                </div>
+                <div class="filtro-group">
+                    <label>Prioridade:</label>
+                    <select id="filtroPrioridade">
+                        <option value="todos">Todas</option>
+                        <option value="Crítica">Crítica</option>
+                        <option value="Alta">Alta</option>
+                        <option value="Média">Média</option>
+                        <option value="Baixa">Baixa</option>
+                    </select>
+                </div>
+                <div class="filtro-group search-group">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"/>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    </svg>
+                    <input type="text" id="filtroBusca" placeholder="Buscar por nome, setor...">
+                </div>
+            </div>
+        </div>
+
+        <div class="table-wrapper">
+            <table class="chamados-table" id="tabelaChamados">
+                <thead>
+                    <tr>
+                        <th>Nº</th>
+                        <th>Prioridade</th>
+                        <th>Nome</th>
+                        <th>Setor</th>
+                        <th>Problema</th>
+                        <th>Descrição</th>
+                        <th>Data/Hora</th>
+                        <th>Status</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="corpoTabela"></tbody>
+            </table>
+        </div>
+
+        <div class="empty-state" id="emptyState" style="display:none;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/>
+                <polyline points="13 2 13 9 20 9"/>
+            </svg>
+            <h3>Nenhum chamado encontrado</h3>
+            <p>Quando novos chamados forem abertos, eles aparecerão aqui.</p>
+        </div>
+    </section>
+
+    <section class="table-section lixeira-section" id="lixeiraSection" style="display:none;">
+        <div class="table-header">
+            <h2>🗑 Lixeira de Chamados</h2>
+            <div class="lixeira-info">
+                <span id="lixeiraContador" style="color:var(--text-light); font-size:0.85rem;">0 chamados</span>
+                <button class="btn-acao btn-ver" onclick="toggleLixeira()" style="margin-left:12px;">Ocultar Lixeira</button>
+            </div>
+        </div>
+
+        <div class="table-wrapper" id="lixeiraTableWrapper">
+            <table class="chamados-table">
+                <thead>
+                    <tr>
+                        <th>Nº</th>
+                        <th>Prioridade</th>
+                        <th>Nome</th>
+                        <th>Setor</th>
+                        <th>Problema</th>
+                        <th>Excluído em</th>
+                        <th>Expira em</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="corpoLixeira"></tbody>
+            </table>
+        </div>
+
+        <div class="empty-state" id="lixeiraVazia" style="display:none;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <polyline points="3 6 5 6 21 6"/>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+            </svg>
+            <h3>Lixeira vazia</h3>
+            <p>Chamados excluídos aparecerão aqui por até 30 dias.</p>
+        </div>
+    </section>
+
+    <div class="modal-overlay" id="modalDetalhes">
+        <div class="modal modal-detalhes">
+            <button class="modal-close" onclick="fecharModalDetalhes()">✕</button>
+            <h3>📋 Detalhes do Chamado <span id="detalheNumero"></span></h3>
+            <div class="detalhe-grid">
+                <div class="detalhe-item">
+                    <strong>Nome:</strong>
+                    <span id="detalheNome"></span>
+                </div>
+                <div class="detalhe-item">
+                    <strong>Setor:</strong>
+                    <span id="detalheSetor"></span>
+                </div>
+                <div class="detalhe-item">
+                    <strong>Problema:</strong>
+                    <span id="detalheProblema"></span>
+                </div>
+                <div class="detalhe-item">
+                    <strong>Prioridade:</strong>
+                    <span id="detalhePrioridade"></span>
+                </div>
+                <div class="detalhe-item">
+                    <strong>Data/Hora:</strong>
+                    <span id="detalheData"></span>
+                </div>
+                <div class="detalhe-item">
+                    <strong>Status:</strong>
+                    <span id="detalheStatus"></span>
+                </div>
+                <div class="detalhe-item">
+                    <strong>Última Atualização:</strong>
+                    <span id="detalheUltimaAtt"></span>
+                </div>
+                <div class="detalhe-item full">
+                    <strong>Descrição:</strong>
+                    <p id="detalheDescricao"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modalConfirmacaoStatus">
+        <div class="modal modal-confirmacao">
+            <div class="modal-confirmacao-icone">?</div>
+            <h3 class="modal-confirmacao-titulo">Confirmar Ação</h3>
+            <p class="modal-confirmacao-mensagem"></p>
+            <p class="modal-confirmacao-sub"></p>
+            <div class="modal-confirmacao-btns">
+                <button class="btn-modal btn-cancelar-status" onclick="fecharModalConfirmacao()">
+                    Cancelar
+                </button>
+                <button class="btn-modal btn-confirmar-status" onclick="confirmarAcaoStatus()">
+                    Confirmar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/auth.js"></script>
+    <script src="js/notificacoes.js"></script>
+    <script src="js/dashboard.js"></script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+node_modules/
+banco/
+.env
+.env.local
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+*.docx
