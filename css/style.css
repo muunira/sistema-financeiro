@@ -1004,7 +1004,11 @@ body {
 
 .input-senha-wrapper input {
     width: 100%;
-    padding-right: 48px !important;
+}
+
+.input-senha-wrapper input::-ms-reveal,
+.input-senha-wrapper input::-ms-clear {
+    display: none;
 }
 
 .toggle-senha {
