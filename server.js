@@ -5,16 +5,25 @@ const bcrypt = require("bcryptjs");
 const { Pool } = require("pg");
 const nodemailer = require("nodemailer");
 
-// Configuração do email
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || 'smtp.gmail.com',
-  port: parseInt(process.env.SMTP_PORT || '587'),
-  secure: false,
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS
-  }
-});
+// Configuração do email (Gmail ou Outlook)
+function criarTransporter() {
+  const user = process.env.SMTP_USER || '';
+  const isOutlook = user.includes('@outlook') || user.includes('@hotmail') || user.includes('@live');
+  const host = process.env.SMTP_HOST || (isOutlook ? 'smtp-mail.outlook.com' : 'smtp.gmail.com');
+  const port = parseInt(process.env.SMTP_PORT || '587');
+
+  return nodemailer.createTransport({
+    host,
+    port,
+    secure: false,
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS
+    },
+    tls: { ciphers: 'SSLv3', rejectUnauthorized: false }
+  });
+}
+const transporter = criarTransporter();
 
 async function enviarEmailResolucao(emailDestino, chamado, feedback) {
   if (!emailDestino || !process.env.SMTP_USER) return;
