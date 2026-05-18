@@ -121,8 +121,12 @@
             </div>
         </div>
 
-        <div class="table-wrapper">
-            <table class="chamados-table" id="tabelaChamados">
+        <h3 style="margin:1rem 0 0.5rem; color:var(--text); font-size:1rem; display:flex; align-items:center; gap:8px;">
+            🔴 Chamados Pendentes
+            <span class="badge-count" id="countPendentes" style="font-size:0.75rem;">0</span>
+        </h3>
+        <div class="table-wrapper" id="tablePendentes">
+            <table class="chamados-table">
                 <thead>
                     <tr>
                         <th>Nº</th>
@@ -136,17 +140,49 @@
                         <th>Ações</th>
                     </tr>
                 </thead>
-                <tbody id="corpoTabela"></tbody>
+                <tbody id="corpoTabelaPendentes"></tbody>
             </table>
         </div>
 
-        <div class="empty-state" id="emptyState" style="display:none;">
+        <div class="empty-state" id="emptyStatePendentes" style="display:none;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                <polyline points="22 4 12 14.01 9 11.01"/>
+            </svg>
+            <h3>Nenhum chamado pendente</h3>
+            <p>Todos os chamados foram resolvidos!</p>
+        </div>
+
+        <h3 style="margin:2rem 0 0.5rem; color:var(--text); font-size:1rem; display:flex; align-items:center; gap:8px;">
+            🟢 Chamados Resolvidos
+            <span class="badge-count" id="countResolvidos" style="font-size:0.75rem;">0</span>
+        </h3>
+        <div class="table-wrapper" id="tableResolvidos">
+            <table class="chamados-table">
+                <thead>
+                    <tr>
+                        <th>Nº</th>
+                        <th>Prioridade</th>
+                        <th>Usuário</th>
+                        <th>Setor</th>
+                        <th>Problema</th>
+                        <th>Descrição</th>
+                        <th>Data/Hora</th>
+                        <th>Status</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="corpoTabelaResolvidos"></tbody>
+            </table>
+        </div>
+
+        <div class="empty-state" id="emptyStateResolvidos" style="display:none;">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                 <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/>
                 <polyline points="13 2 13 9 20 9"/>
             </svg>
-            <h3>Nenhum chamado encontrado</h3>
-            <p>Quando novos chamados forem abertos, eles aparecerão aqui.</p>
+            <h3>Nenhum chamado resolvido</h3>
+            <p>Chamados resolvidos aparecerão aqui.</p>
         </div>
     </section>
 

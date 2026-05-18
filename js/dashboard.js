@@ -220,42 +220,65 @@ function animarNumero(id, valor) {
 }
 
 function renderizarTabela(chamados) {
-    const corpo = document.getElementById('corpoTabela');
-    const emptyState = document.getElementById('emptyState');
-    const tableWrapper = document.querySelector('.table-wrapper');
+    const corpoPendentes = document.getElementById('corpoTabelaPendentes');
+    const corpoResolvidos = document.getElementById('corpoTabelaResolvidos');
+    const tablePendentes = document.getElementById('tablePendentes');
+    const tableResolvidos = document.getElementById('tableResolvidos');
+    const emptyPendentes = document.getElementById('emptyStatePendentes');
+    const emptyResolvidos = document.getElementById('emptyStateResolvidos');
+    const countPendentes = document.getElementById('countPendentes');
+    const countResolvidos = document.getElementById('countResolvidos');
 
     let filtrados = ordenarPorPrioridade(aplicarFiltros(chamados));
 
-    if (filtrados.length === 0) {
-        tableWrapper.style.display = 'none';
-        emptyState.style.display = 'block';
-        return;
+    const pendentes = filtrados.filter(c => c.status !== 'Resolvido');
+    const resolvidos = filtrados.filter(c => c.status === 'Resolvido');
+
+    countPendentes.textContent = pendentes.length;
+    countResolvidos.textContent = resolvidos.length;
+
+    // Pendentes
+    if (pendentes.length === 0) {
+        tablePendentes.style.display = 'none';
+        emptyPendentes.style.display = 'block';
+    } else {
+        tablePendentes.style.display = 'block';
+        emptyPendentes.style.display = 'none';
+        corpoPendentes.innerHTML = '';
+        pendentes.forEach(chamado => renderizarLinha(chamado, corpoPendentes));
     }
 
-    tableWrapper.style.display = 'block';
-    emptyState.style.display = 'none';
-    corpo.innerHTML = '';
+    // Resolvidos
+    if (resolvidos.length === 0) {
+        tableResolvidos.style.display = 'none';
+        emptyResolvidos.style.display = 'block';
+    } else {
+        tableResolvidos.style.display = 'block';
+        emptyResolvidos.style.display = 'none';
+        corpoResolvidos.innerHTML = '';
+        resolvidos.forEach(chamado => renderizarLinha(chamado, corpoResolvidos));
+    }
+}
 
-    filtrados.forEach(chamado => {
-        const tr = document.createElement('tr');
-        if (chamado.prioridade === 'Crítica' && chamado.status !== 'Resolvido') {
-            tr.className = 'prioridade-critica';
-        }
-        const displayId = chamado.numero || chamado.id;
-        const displayData = chamado.data_hora || chamado.dataHora;
-        tr.innerHTML = `
-            <td><strong>#${displayId}</strong></td>
-            <td>${getBadgePrioridade(chamado.prioridade)}</td>
-            <td>${chamado.nome}</td>
-            <td>${chamado.setor}</td>
-            <td>${chamado.problema}</td>
-            <td><div class="descricao-truncada" title="${escapeHtml(chamado.descricao)}">${escapeHtml(chamado.descricao)}</div></td>
-            <td style="white-space:nowrap; font-size:0.8rem; color:var(--text-light);">${displayData}</td>
-            <td>${getBadgeStatus(chamado.status)}</td>
-            <td>${renderizarAcoes(chamado)}</td>
-        `;
-        corpo.appendChild(tr);
-    });
+function renderizarLinha(chamado, corpo) {
+    const tr = document.createElement('tr');
+    if (chamado.prioridade === 'Crítica' && chamado.status !== 'Resolvido') {
+        tr.className = 'prioridade-critica';
+    }
+    const displayId = chamado.numero || chamado.id;
+    const displayData = chamado.data_hora || chamado.dataHora;
+    tr.innerHTML = `
+        <td><strong>#${displayId}</strong></td>
+        <td>${getBadgePrioridade(chamado.prioridade)}</td>
+        <td>${chamado.nome}</td>
+        <td>${chamado.setor}</td>
+        <td>${chamado.problema}</td>
+        <td><div class="descricao-truncada" title="${escapeHtml(chamado.descricao)}">${escapeHtml(chamado.descricao)}</div></td>
+        <td style="white-space:nowrap; font-size:0.8rem; color:var(--text-light);">${displayData}</td>
+        <td>${getBadgeStatus(chamado.status)}</td>
+        <td>${renderizarAcoes(chamado)}</td>
+    `;
+    corpo.appendChild(tr);
 }
 
 function renderizarAcoes(chamado) {
