@@ -46,14 +46,14 @@
 
             <form id="formCadastro" class="form-login">
                 <div class="form-group">
-                    <label for="nome">
+                    <label for="usuario">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
                             <circle cx="12" cy="7" r="4"/>
                         </svg>
-                        Nome Completo
+                        Usuário (login)
                     </label>
-                    <input type="text" id="nome" placeholder="Digite seu nome completo" required>
+                    <input type="text" id="usuario" placeholder="Ex: joao.silva" autocomplete="username" required>
                 </div>
 
                 <div class="form-group">
@@ -89,17 +89,6 @@
                         <option value="Depósito">Depósito</option>
                         <option value="Outro">Outro</option>
                     </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="usuario">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                            <circle cx="12" cy="7" r="4"/>
-                        </svg>
-                        Usuário (login)
-                    </label>
-                    <input type="text" id="usuario" placeholder="Ex: joao.silva" autocomplete="username" required>
                 </div>
 
                 <div class="form-group">
@@ -186,11 +175,11 @@
         document.getElementById('formCadastro').addEventListener('submit', async function(e) {
             e.preventDefault();
 
-            const nome = document.getElementById('nome').value.trim();
-            const email = document.getElementById('email').value.trim();
-            const setor = document.getElementById('setor').value.trim();
             const usuario = document.getElementById('usuario').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const setor = document.getElementById('setor').value;
             const senha = document.getElementById('senha').value;
+            const nome = usuario;
             const alertaErro = document.getElementById('alertaErro');
             const alertaSucesso = document.getElementById('alertaSucesso');
             const msgErro = document.getElementById('msgErro');
@@ -199,9 +188,9 @@
             alertaErro.style.display = 'none';
             alertaSucesso.style.display = 'none';
 
-            if (!nome || !usuario || !senha) {
+            if (!usuario || !senha) {
                 alertaErro.style.display = 'flex';
-                msgErro.textContent = 'Preencha todos os campos obrigatórios (Nome, Usuário e Senha).';
+                msgErro.textContent = 'Preencha os campos obrigatórios (Usuário e Senha).';
                 return;
             }
 
