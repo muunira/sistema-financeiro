@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meu Perfil - Suporte TI</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/png" href="img/logo.png">
+    <link rel="shortcut icon" type="image/png" href="img/logo.png">
+    <link rel="apple-touch-icon" href="img/logo.png">
+</head>
+<body class="page-dashboard">
+
+    <header class="header header-dashboard">
+        <div class="header-content">
+            <div class="logo">
+                <div class="logo-icon">
+                    <img src="img/logo.png" alt="Logo">
+                </div>
+                <div>
+                    <h1>Meu Perfil</h1>
+                    <span class="subtitle">Informações da conta</span>
+                </div>
+            </div>
+            <nav class="header-nav" id="headerNav"></nav>
+        </div>
+    </header>
+
+    <main style="max-width:600px; margin:2rem auto; padding:0 1.5rem;">
+
+        <div class="admin-card">
+            <div class="admin-card-header">
+                <h2>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                        <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                    Dados do Perfil
+                </h2>
+            </div>
+            <div class="admin-card-body">
+                <div id="perfilContent" style="display:flex; flex-direction:column; gap:1.25rem;">
+                    <div style="display:flex; align-items:center; gap:1rem; margin-bottom:0.5rem;">
+                        <div id="perfilAvatar" style="width:64px; height:64px; border-radius:50%; background:var(--primary-light); color:var(--primary); display:flex; align-items:center; justify-content:center; font-size:1.5rem; font-weight:700; flex-shrink:0;"></div>
+                        <div>
+                            <div id="perfilNome" style="font-size:1.2rem; font-weight:700; color:var(--text);"></div>
+                            <div id="perfilRole" style="font-size:0.85rem; color:var(--text-light);"></div>
+                        </div>
+                    </div>
+
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+                        <div class="detalhe-item">
+                            <strong>Usuário (login)</strong>
+                            <span id="perfilUsuario"></span>
+                        </div>
+                        <div class="detalhe-item">
+                            <strong>Perfil</strong>
+                            <span id="perfilPerfil"></span>
+                        </div>
+                        <div class="detalhe-item">
+                            <strong>E-mail</strong>
+                            <span id="perfilEmail"></span>
+                        </div>
+                        <div class="detalhe-item">
+                            <strong>Setor</strong>
+                            <span id="perfilSetor"></span>
+                        </div>
+                        <div class="detalhe-item">
+                            <strong>Cargo</strong>
+                            <span id="perfilCargo"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <script src="js/auth.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const sessao = Auth.verificarSessao();
+            if (!sessao) { window.location.href = 'login.html'; return; }
+
+            renderizarHeader(sessao);
+            renderizarPerfil(sessao);
+        });
+
+        function renderizarPerfil(sessao) {
+            const iniciais = sessao.nome.split(' ').filter(p => p).slice(0, 2).map(p => p[0].toUpperCase()).join('');
+            document.getElementById('perfilAvatar').textContent = iniciais;
+            document.getElementById('perfilNome').textContent = sessao.nome;
+
+            const rolesLabel = {
+                diretor: '👑 Diretor(a) de TI',
+                estagiario: '🎓 Estagiário(a)',
+                usuario: '👤 Usuário'
+            };
+            document.getElementById('perfilRole').textContent = rolesLabel[sessao.perfil] || sessao.perfil;
+            document.getElementById('perfilUsuario').textContent = '@' + sessao.usuario;
+            document.getElementById('perfilPerfil').textContent = rolesLabel[sessao.perfil] || sessao.perfil;
+            document.getElementById('perfilEmail').textContent = sessao.email || 'Não informado';
+            document.getElementById('perfilSetor').textContent = sessao.setor || 'Não informado';
+            document.getElementById('perfilCargo').textContent = sessao.cargo || 'Não informado';
+        }
+
+        function renderizarHeader(sessao) {
+            const nav = document.getElementById('headerNav');
+            if (!nav) return;
+            const iniciais = sessao.nome.split(' ').filter(p => p).slice(0, 2).map(p => p[0].toUpperCase()).join('');
+
+            const rolesLabel = {
+                diretor: '👑 Diretor(a) de TI',
+                estagiario: '🎓 Estagiário(a)',
+                usuario: '👤 Usuário'
+            };
+
+            const navLinks = sessao.perfil === 'usuario'
+                ? `<a href="meus-chamados.html" class="dropdown-nav-item">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                            <polyline points="14 2 14 8 20 8"/>
+                        </svg>
+                        Meus Chamados
+                    </a>
+                    <a href="index.html" class="dropdown-nav-item">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="5" x2="12" y2="19"/>
+                            <line x1="5" y1="12" x2="19" y2="12"/>
+                        </svg>
+                        Abrir Chamado
+                    </a>`
+                : `<a href="dashboard.html" class="dropdown-nav-item">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="3" width="7" height="7"/>
+                            <rect x="14" y="3" width="7" height="7"/>
+                            <rect x="3" y="14" width="7" height="7"/>
+                            <rect x="14" y="14" width="7" height="7"/>
+                        </svg>
+                        Dashboard
+                    </a>
+                    <a href="admin.html" class="dropdown-nav-item">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                            <circle cx="9" cy="7" r="4"/>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                        </svg>
+                        Gerenciar Usuários
+                    </a>`;
+
+            nav.innerHTML = `
+                <div class="user-menu-wrapper" id="userMenuWrapper">
+                    <button class="user-menu-btn" id="userMenuBtn" onclick="toggleMenu()">
+                        <div class="user-menu-avatar">${iniciais}</div>
+                        <span class="user-menu-nome">${sessao.nome}</span>
+                        <svg class="user-menu-seta" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <polyline points="6 9 12 15 18 9"/>
+                        </svg>
+                    </button>
+                    <div class="user-dropdown" id="userDropdown">
+                        <div class="dropdown-perfil">
+                            <div class="dropdown-perfil-topo">
+                                <div class="dropdown-avatar-lg">${iniciais}</div>
+                                <div class="dropdown-perfil-info">
+                                    <div class="dropdown-perfil-nome">${sessao.nome}</div>
+                                    <div class="dropdown-perfil-cargo">${sessao.cargo || sessao.setor || 'Usuário'}</div>
+                                </div>
+                            </div>
+                            <div class="dropdown-perfil-role ${sessao.perfil === 'diretor' ? 'role-diretor' : ''}">
+                                ${rolesLabel[sessao.perfil] || sessao.perfil}
+                            </div>
+                        </div>
+                        <div class="dropdown-sessao">
+                            <span class="dropdown-sessao-dot"></span>
+                            Sessão ativa
+                        </div>
+                        <div class="dropdown-nav">
+                            <a href="perfil.html" class="dropdown-nav-item">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                    <circle cx="12" cy="7" r="4"/>
+                                </svg>
+                                Meu Perfil
+                            </a>
+                            ${navLinks}
+                        </div>
+                        <div class="dropdown-logout-area">
+                            <button class="dropdown-logout-btn" onclick="Auth.logout()">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                                    <polyline points="16 17 21 12 16 7"/>
+                                    <line x1="21" y1="12" x2="9" y2="12"/>
+                                </svg>
+                                Sair da Conta
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.addEventListener('click', (e) => {
+                const wrapper = document.getElementById('userMenuWrapper');
+                if (wrapper && !wrapper.contains(e.target)) {
+                    document.getElementById('userMenuBtn')?.classList.remove('aberto');
+                    document.getElementById('userDropdown')?.classList.remove('aberto');
+                }
+            });
+        }
+
+        function toggleMenu() {
+            const btn = document.getElementById('userMenuBtn');
+            const dropdown = document.getElementById('userDropdown');
+            if (!btn || !dropdown) return;
+            const aberto = dropdown.classList.contains('aberto');
+            btn.classList.toggle('aberto', !aberto);
+            dropdown.classList.toggle('aberto', !aberto);
+        }
+    </script>
+</body>
+</html>
