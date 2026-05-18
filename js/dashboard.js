@@ -4,6 +4,7 @@ let lixeiraAberta = false;
 document.addEventListener('DOMContentLoaded', () => {
     const sessao = Auth.verificarSessao();
     if (!sessao) { window.location.href = 'login.html'; return; }
+    if (sessao.perfil === 'usuario') { window.location.href = 'meus-chamados.html'; return; }
 
     renderizarHeaderUsuario(sessao);
     carregarDashboard();

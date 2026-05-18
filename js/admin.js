@@ -4,6 +4,7 @@ let usuarioParaEditarDados = null;
 document.addEventListener('DOMContentLoaded', () => {
     const sessao = Auth.protegerPagina();
     if (!sessao) return;
+    if (sessao.perfil === 'usuario') { window.location.href = 'meus-chamados.html'; return; }
 
     renderizarUserInfo(sessao);
     renderizarUsuarios();

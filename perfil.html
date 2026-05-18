@@ -75,6 +75,24 @@
             </div>
         </div>
 
+        <div class="admin-card" style="margin-top:1.5rem;">
+            <div class="admin-card-header">
+                <h2>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14 2 14 8 20 8"/>
+                    </svg>
+                    Meus Chamados Recentes
+                </h2>
+                <a href="index.html" class="btn-submit" style="width:auto; padding:8px 18px; font-size:0.85rem; margin:0;">
+                    + Novo Chamado
+                </a>
+            </div>
+            <div class="admin-card-body" id="chamadosRecentes">
+                <p style="text-align:center; color:var(--text-light); padding:1rem;">Carregando...</p>
+            </div>
+        </div>
+
     </main>
 
     <script src="js/auth.js"></script>
@@ -85,6 +103,7 @@
 
             renderizarHeader(sessao);
             renderizarPerfil(sessao);
+            carregarChamadosRecentes(sessao.id);
         });
 
         function renderizarPerfil(sessao) {
@@ -216,6 +235,61 @@
             const aberto = dropdown.classList.contains('aberto');
             btn.classList.toggle('aberto', !aberto);
             dropdown.classList.toggle('aberto', !aberto);
+        }
+
+        async function carregarChamadosRecentes(usuarioId) {
+            const container = document.getElementById('chamadosRecentes');
+            try {
+                const resp = await fetch(`/api/meus-chamados/${usuarioId}`);
+                const data = await resp.json();
+
+                if (!data.sucesso || !data.chamados || data.chamados.length === 0) {
+                    container.innerHTML = `
+                        <div style="text-align:center; padding:2rem; color:var(--text-light);">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:48px; height:48px; margin:0 auto 0.5rem;">
+                                <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/>
+                                <polyline points="13 2 13 9 20 9"/>
+                            </svg>
+                            <p>Nenhum chamado aberto ainda.</p>
+                            <a href="index.html" style="color:var(--primary); font-weight:600;">Abrir seu primeiro chamado</a>
+                        </div>
+                    `;
+                    return;
+                }
+
+                const recentes = data.chamados.slice(0, 5);
+                container.innerHTML = recentes.map(chamado => {
+                    const statusClass = {'Aberto':'aberto','Em Andamento':'andamento','Resolvido':'resolvido'}[chamado.status] || '';
+                    const statusIcon = {'Aberto':'🔴','Em Andamento':'🟡','Resolvido':'🟢'}[chamado.status] || '';
+                    const hasFeedback = chamado.feedback && chamado.status === 'Resolvido';
+
+                    return `
+                        <div style="display:flex; align-items:center; justify-content:space-between; padding:0.75rem 0; border-bottom:1px solid var(--border);">
+                            <div style="flex:1; min-width:0;">
+                                <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+                                    <strong style="font-size:0.85rem; color:var(--primary);">#${chamado.numero}</strong>
+                                    <span style="font-size:0.85rem; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${chamado.problema}</span>
+                                </div>
+                                <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                                    <span class="badge-status ${statusClass}" style="font-size:0.7rem;">${statusIcon} ${chamado.status}</span>
+                                    <span style="font-size:0.75rem; color:var(--text-light);">${chamado.data_hora}</span>
+                                    ${hasFeedback ? '<span style="font-size:0.7rem; background:#ecfdf5; color:#047857; padding:2px 8px; border-radius:12px; font-weight:600;">💬 Feedback</span>' : ''}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                if (data.chamados.length > 5) {
+                    container.innerHTML += `
+                        <div style="text-align:center; padding:0.75rem;">
+                            <a href="meus-chamados.html" style="color:var(--primary); font-weight:600; font-size:0.85rem;">Ver todos os ${data.chamados.length} chamados →</a>
+                        </div>
+                    `;
+                }
+            } catch(e) {
+                container.innerHTML = '<p style="text-align:center; color:var(--text-light); padding:1rem;">Erro ao carregar chamados.</p>';
+            }
         }
     </script>
 </body>
