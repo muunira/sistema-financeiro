@@ -107,6 +107,8 @@ const Auth = (() => {
             usuario: dados.usuario.usuario,
             perfil: dados.usuario.perfil,
             cargo: dados.usuario.cargo,
+            email: dados.usuario.email || '',
+            setor: dados.usuario.setor || '',
             loginEm: new Date().toLocaleString('pt-BR'),
             expira: Date.now() + (8 * 60 * 60 * 1000)
         };
