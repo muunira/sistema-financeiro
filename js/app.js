@@ -17,6 +17,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (setorInput && sessao.setor) {
         setorInput.value = sessao.setor;
     }
+    const emailInput = document.getElementById('emailChamado');
+    if (emailInput && sessao.email) {
+        emailInput.value = sessao.email;
+    }
 });
 
 function renderizarHeaderIndex() {
@@ -162,6 +166,7 @@ async function enviarChamado(e) {
     e.preventDefault();
 
     const nome = document.getElementById('nome').value.trim();
+    const emailChamado = document.getElementById('emailChamado').value.trim();
     const setor = document.getElementById('setor').value;
     const problema = document.getElementById('problema').value;
     const prioridade = document.querySelector('input[name="prioridade"]:checked');
@@ -178,6 +183,7 @@ async function enviarChamado(e) {
     const chamado = {
         numero: numero,
         nome: nome,
+        email: emailChamado,
         setor: setor,
         problema: problema,
         prioridade: prioridade.value,

@@ -153,6 +153,7 @@ async function inicializarBanco() {
     // Adicionar colunas se não existirem (para bancos já existentes)
     await pool.query(`ALTER TABLE chamados ADD COLUMN IF NOT EXISTS usuario_id INTEGER DEFAULT NULL`);
     await pool.query(`ALTER TABLE chamados ADD COLUMN IF NOT EXISTS feedback TEXT DEFAULT NULL`);
+    await pool.query(`ALTER TABLE chamados ADD COLUMN IF NOT EXISTS email TEXT DEFAULT ''`);
 
     // Corrigir perfis antigos (coordenador, tecnico, analista, gustavo → diretor)
     await pool.query(`UPDATE usuarios SET perfil = 'diretor' WHERE perfil IN ('coordenador', 'gustavo')`);
@@ -246,7 +247,7 @@ app.post("/api/registro", async (req, res) => {
 
 // Criar chamado
 app.post("/api/chamados", async (req, res) => {
-  const { numero, nome, setor, problema, prioridade, descricao, status, data_hora, timestamp, usuario_id } = req.body;
+  const { numero, nome, email, setor, problema, prioridade, descricao, status, data_hora, timestamp, usuario_id } = req.body;
 
   if (!numero || !nome || !setor || !problema || !prioridade || !descricao) {
     return res.status(400).json({ sucesso: false, erro: "Todos os campos são obrigatórios." });
@@ -254,9 +255,9 @@ app.post("/api/chamados", async (req, res) => {
 
   try {
     const { rows } = await pool.query(
-      `INSERT INTO chamados (numero, nome, setor, problema, prioridade, descricao, status, data_hora, timestamp, usuario_id)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id`,
-      [numero, nome, setor, problema, prioridade, descricao, status || 'Aberto', data_hora, timestamp, usuario_id || null]
+      `INSERT INTO chamados (numero, nome, setor, problema, prioridade, descricao, status, data_hora, timestamp, usuario_id, email)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id`,
+      [numero, nome, setor, problema, prioridade, descricao, status || 'Aberto', data_hora, timestamp, usuario_id || null, email || '']
     );
 
     const novoChamado = { id: rows[0].id, numero, nome, setor, problema, prioridade, descricao, status: status || 'Aberto', data_hora, timestamp, usuario_id: usuario_id || null };
@@ -302,11 +303,16 @@ app.put("/api/chamados/:id", async (req, res) => {
     if (status === 'Resolvido') {
       const chamadoResult = await pool.query(`SELECT * FROM chamados WHERE id = $1`, [id]);
       const chamado = chamadoResult.rows[0];
-      if (chamado && chamado.usuario_id) {
-        const userResult = await pool.query(`SELECT email FROM usuarios WHERE id = $1`, [chamado.usuario_id]);
-        const usuario = userResult.rows[0];
-        if (usuario && usuario.email) {
-          enviarEmailResolucao(usuario.email, chamado, feedback || chamado.feedback);
+      if (chamado) {
+        let emailDestino = chamado.email || '';
+        // Se não há email no chamado, buscar do cadastro do usuário
+        if (!emailDestino && chamado.usuario_id) {
+          const userResult = await pool.query(`SELECT email FROM usuarios WHERE id = $1`, [chamado.usuario_id]);
+          const usuario = userResult.rows[0];
+          if (usuario) emailDestino = usuario.email || '';
+        }
+        if (emailDestino) {
+          enviarEmailResolucao(emailDestino, chamado, feedback || chamado.feedback);
         }
       }
     }
