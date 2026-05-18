@@ -33,10 +33,8 @@ function renderizarHeaderUsuario(sessao) {
 
     const rolesLabel = {
         diretor:     '👑 Diretor(a) de TI',
-        coordenador: '📋 Coordenador(a)',
-        analista:    '🔍 Analista',
-        tecnico:     '🔧 Técnico(a)',
-        estagiario:  '🎓 Estagiário(a)'
+        estagiario:  '🎓 Estagiário(a)',
+        usuario:     '👤 Usuário'
     };
 
     nav.innerHTML = `
@@ -258,10 +256,10 @@ function renderizarAcoes(chamado) {
     const transicoes = {
         'Aberto': `
             <button class="btn-acao btn-andamento" onclick="confirmarMudancaStatus('${displayId}','Em Andamento')">⚙ Iniciar</button>
-            <button class="btn-acao btn-resolver" onclick="confirmarMudancaStatus('${displayId}','Resolvido')">✔ Resolver</button>`,
+            <button class="btn-acao btn-resolver" onclick="abrirModalFeedback('${displayId}')">✔ Resolver</button>`,
         'Em Andamento': `
             <button class="btn-acao btn-reverter" onclick="confirmarMudancaStatus('${displayId}','Aberto')">↩ Reverter</button>
-            <button class="btn-acao btn-resolver" onclick="confirmarMudancaStatus('${displayId}','Resolvido')">✔ Resolver</button>`,
+            <button class="btn-acao btn-resolver" onclick="abrirModalFeedback('${displayId}')">✔ Resolver</button>`,
         'Resolvido': `
             <button class="btn-acao btn-reverter" onclick="confirmarMudancaStatus('${displayId}','Em Andamento')">↩ Reabrir</button>`
     };
@@ -280,20 +278,6 @@ const configTransicoes = {
         sub: 'Você poderá reverter clicando em "Reverter".',
         icone: '⚙', corIcone: 'var(--warning)', corFundo: 'var(--warning-bg)',
         txtBtn: 'Sim, Iniciar', corBtn: 'var(--warning)'
-    },
-    'Em Andamento|Resolvido': {
-        titulo: 'Marcar como Resolvido?',
-        mensagem: 'O chamado <strong>#ID</strong> será marcado como <strong>Resolvido</strong>.',
-        sub: 'Você poderá reabrir clicando em "Reabrir".',
-        icone: '✔', corIcone: 'var(--success)', corFundo: 'var(--success-bg)',
-        txtBtn: 'Sim, Resolver', corBtn: 'var(--success)'
-    },
-    'Aberto|Resolvido': {
-        titulo: 'Resolver Direto?',
-        mensagem: 'O chamado <strong>#ID</strong> será marcado como <strong>Resolvido</strong>.',
-        sub: 'Você poderá reabrir clicando em "Reabrir".',
-        icone: '✔', corIcone: 'var(--success)', corFundo: 'var(--success-bg)',
-        txtBtn: 'Sim, Resolver', corBtn: 'var(--success)'
     },
     'Em Andamento|Aberto': {
         titulo: 'Reverter para Aberto?',
@@ -443,7 +427,61 @@ async function verDetalhes(id) {
     document.getElementById('detalheDescricao').textContent = chamado.descricao;
     const ultimaAtt = document.getElementById('detalheUltimaAtt');
     if (ultimaAtt) ultimaAtt.textContent = '—';
+
+    const feedbackSection = document.getElementById('detalheFeedbackSection');
+    const feedbackEl = document.getElementById('detalheFeedback');
+    if (chamado.feedback) {
+        feedbackSection.style.display = 'block';
+        feedbackEl.textContent = chamado.feedback;
+    } else {
+        feedbackSection.style.display = 'none';
+    }
+
     document.getElementById('modalDetalhes').classList.add('active');
+}
+
+// ================================================================
+// FEEDBACK AO RESOLVER
+// ================================================================
+let chamadoParaFeedback = null;
+
+function abrirModalFeedback(id) {
+    chamadoParaFeedback = id;
+    document.getElementById('feedbackChamadoId').textContent = `#${id}`;
+    document.getElementById('feedbackTexto').value = '';
+    document.getElementById('modalFeedback').classList.add('active');
+}
+
+function fecharModalFeedback() {
+    chamadoParaFeedback = null;
+    document.getElementById('modalFeedback').classList.remove('active');
+}
+
+async function enviarFeedbackEResolver() {
+    if (!chamadoParaFeedback) return;
+    const feedback = document.getElementById('feedbackTexto').value.trim();
+
+    const chamados = await getChamados();
+    const chamado = chamados.find(c => c.numero === chamadoParaFeedback || c.id === chamadoParaFeedback);
+    if (!chamado) { fecharModalFeedback(); return; }
+
+    try {
+        const response = await fetch(`/api/chamados/${chamado.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: 'Resolvido', feedback: feedback || null })
+        });
+        const data = await response.json();
+        if (data.sucesso) {
+            carregarDashboard();
+            mostrarToast('✔ Chamado resolvido com feedback!', 'success');
+        } else {
+            mostrarToast('Erro: ' + data.erro, 'error');
+        }
+    } catch (error) {
+        mostrarToast('Erro ao resolver chamado.', 'error');
+    }
+    fecharModalFeedback();
 }
 
 function fecharModalDetalhes() {
@@ -503,8 +541,11 @@ document.getElementById('modalDetalhes')?.addEventListener('click', e => {
 document.getElementById('modalConfirmacaoStatus')?.addEventListener('click', e => {
     if (e.target.id === 'modalConfirmacaoStatus') fecharModalConfirmacao();
 });
+document.getElementById('modalFeedback')?.addEventListener('click', e => {
+    if (e.target.id === 'modalFeedback') fecharModalFeedback();
+});
 document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') { fecharMenu(); fecharModalDetalhes(); fecharModalConfirmacao(); }
+    if (e.key === 'Escape') { fecharMenu(); fecharModalDetalhes(); fecharModalConfirmacao(); fecharModalFeedback(); }
 });
 
 // ================================================================

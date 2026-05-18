@@ -13,6 +13,8 @@
     { "src": "/js/(.*)", "dest": "/js/$1" },
     { "src": "/img/(.*)", "dest": "/img/$1" },
     { "src": "/login", "methods": ["GET"], "dest": "/login.html" },
+    { "src": "/cadastro", "methods": ["GET"], "dest": "/cadastro.html" },
+    { "src": "/meus-chamados", "methods": ["GET"], "dest": "/meus-chamados.html" },
     { "src": "/dashboard", "methods": ["GET"], "dest": "/dashboard.html" },
     { "src": "/admin", "methods": ["GET"], "dest": "/admin.html" },
     { "src": "/login", "methods": ["POST"], "dest": "/server.js" },

@@ -117,7 +117,11 @@ const Auth = (() => {
         alertaSucesso.style.display = 'flex';
 
         setTimeout(() => {
-            window.location.href = 'dashboard.html';
+            if (sessao.perfil === 'usuario') {
+                window.location.href = 'meus-chamados.html';
+            } else {
+                window.location.href = 'dashboard.html';
+            }
         }, 1200);
 
     } catch (error) {
@@ -273,10 +277,24 @@ async function editarUsuario(id, dados) {
     }
 }
 
+    async function registro(nome, usuario, senha) {
+        try {
+            const resposta = await fetch("/api/registro", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ nome, usuario, senha })
+            });
+            const dados = await resposta.json();
+            return dados;
+        } catch (error) {
+            return { sucesso: false, erro: 'Erro ao conectar com o servidor.' };
+        }
+    }
+
     return {
         login, logout, verificarSessao, protegerPagina,
         getUsuarios, criarUsuario, removerUsuario, redefinirSenha,
-        editarUsuario    // ← NOVO
+        editarUsuario, registro
     };
 })();
 

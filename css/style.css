@@ -1291,10 +1291,11 @@ body {
 }
 
 .perfil-diretor { background: #fef9c3; color: #713f12; }
+.perfil-estagiario { background: #fce7f3; color: #be185d; }
+.perfil-usuario { background: var(--info-bg); color: var(--info); }
 .perfil-tecnico { background: var(--info-bg); color: var(--info); }
 .perfil-analista { background: var(--success-bg); color: #047857; }
 .perfil-coordenador { background: #f3e8ff; color: #7c3aed; }
-.perfil-estagiario { background: #fce7f3; color: #be185d; }
 
 .usuario-meta {
     font-size: 0.78rem;

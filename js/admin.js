@@ -31,10 +31,8 @@ function renderizarUserInfo(sessao) {
 
     const rolesLabel = {
         diretor:     '👑 Diretor(a) de TI',
-        coordenador: '📋 Coordenador(a)',
-        analista:    '🔍 Analista',
-        tecnico:     '🔧 Técnico(a)',
-        estagiario:  '🎓 Estagiário(a)'
+        estagiario:  '🎓 Estagiário(a)',
+        usuario:     '👤 Usuário'
     };
 
     headerNav.innerHTML = `
@@ -190,10 +188,8 @@ function criarCardUsuario(usuario) {
 
     const perfilLabels = {
         diretor:     '👑 Diretor(a)',
-        coordenador: '📋 Coordenador(a)',
-        analista:    '🔍 Analista',
-        tecnico:     '🔧 Técnico(a)',
-        estagiario:  '🎓 Estagiário(a)'
+        estagiario:  '🎓 Estagiário(a)',
+        usuario:     '👤 Usuário'
     };
 
     div.innerHTML = `

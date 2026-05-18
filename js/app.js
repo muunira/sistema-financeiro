@@ -2,6 +2,14 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('formChamado').addEventListener('submit', enviarChamado);
     mostrarMeusChamados();
     renderizarHeaderIndex();
+
+    const sessao = Auth.verificarSessao();
+    if (sessao) {
+        const nomeInput = document.getElementById('nome');
+        if (nomeInput && sessao.nome) {
+            nomeInput.value = sessao.nome;
+        }
+    }
 });
 
 function renderizarHeaderIndex() {
@@ -15,14 +23,19 @@ function renderizarHeaderIndex() {
 
         const rolesLabel = {
             diretor:     '👑 Diretor(a) de TI',
-            coordenador: '📋 Coordenador(a)',
-            analista:    '🔍 Analista',
-            tecnico:     '🔧 Técnico(a)',
-            estagiario:  '🎓 Estagiário(a)'
+            estagiario:  '🎓 Estagiário(a)',
+            usuario:     '👤 Usuário'
         };
 
-        nav.innerHTML = `
-            <a href="dashboard.html" class="btn-nav">
+        const navLink = sessao.perfil === 'usuario'
+            ? `<a href="meus-chamados.html" class="btn-nav">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                </svg>
+                Meus Chamados
+            </a>`
+            : `<a href="dashboard.html" class="btn-nav">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <rect x="3" y="3" width="7" height="7"/>
                     <rect x="14" y="3" width="7" height="7"/>
@@ -30,7 +43,10 @@ function renderizarHeaderIndex() {
                     <rect x="14" y="14" width="7" height="7"/>
                 </svg>
                 Dashboard TI
-            </a>
+            </a>`;
+
+        nav.innerHTML = `
+            ${navLink}
 
             <div class="user-menu-wrapper" id="userMenuWrapper">
                 <button class="user-menu-btn" id="userMenuBtn" onclick="toggleMenuIndex()">
@@ -64,6 +80,15 @@ function renderizarHeaderIndex() {
                     </div>
 
                     <div class="dropdown-nav">
+                        ${sessao.perfil === 'usuario' ? `
+                        <a href="meus-chamados.html" class="dropdown-nav-item">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                <polyline points="14 2 14 8 20 8"/>
+                            </svg>
+                            Meus Chamados
+                        </a>
+                        ` : `
                         <a href="dashboard.html" class="dropdown-nav-item">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <rect x="3" y="3" width="7" height="7"/>
@@ -82,6 +107,7 @@ function renderizarHeaderIndex() {
                             </svg>
                             Gerenciar Usuários(as)
                         </a>
+                        `}
                     </div>
 
                     <div class="dropdown-logout-area">
@@ -114,7 +140,7 @@ function renderizarHeaderIndex() {
                     <polyline points="10 17 15 12 10 7"/>
                     <line x1="15" y1="12" x2="3" y2="12"/>
                 </svg>
-                <span>Área TI</span>
+                <span>Entrar / Cadastrar</span>
             </a>
         `;
     }
@@ -145,6 +171,7 @@ async function enviarChamado(e) {
 
     const numero = await gerarNumeroChamado();
 
+    const sessao = Auth.verificarSessao();
     const chamado = {
         numero: numero,
         nome: nome,
@@ -154,7 +181,8 @@ async function enviarChamado(e) {
         descricao: descricao,
         status: 'Aberto',
         data_hora: new Date().toLocaleString('pt-BR'),
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        usuario_id: sessao ? sessao.id : null
     };
 
     await salvarChamado(chamado);

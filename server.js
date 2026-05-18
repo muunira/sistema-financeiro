@@ -77,9 +77,15 @@ async function inicializarBanco() {
         status TEXT NOT NULL DEFAULT 'Aberto',
         data_hora TEXT NOT NULL,
         timestamp BIGINT NOT NULL,
-        excluido_em TEXT DEFAULT NULL
+        excluido_em TEXT DEFAULT NULL,
+        usuario_id INTEGER DEFAULT NULL,
+        feedback TEXT DEFAULT NULL
       )
     `);
+
+    // Adicionar colunas se não existirem (para bancos já existentes)
+    await pool.query(`ALTER TABLE chamados ADD COLUMN IF NOT EXISTS usuario_id INTEGER DEFAULT NULL`);
+    await pool.query(`ALTER TABLE chamados ADD COLUMN IF NOT EXISTS feedback TEXT DEFAULT NULL`);
 
     // Usuário padrão para teste
     const { rows } = await pool.query(
@@ -92,7 +98,7 @@ async function inicializarBanco() {
       await pool.query(
         `INSERT INTO usuarios (nome, usuario, senha, perfil, cargo, bloqueado)
          VALUES ($1, $2, $3, $4, $5, $6)`,
-        ["Gustavo TI", "gustavo.ti", senhaHash, "coordenador", "Coordenador(a) de TI", 0]
+        ["Gustavo TI", "gustavo.ti", senhaHash, "diretor", "Diretor(a) de TI", 0]
       );
       console.log("Usuário padrão criado: gustavo.ti / Admin@2024");
     }
@@ -141,9 +147,35 @@ app.post("/login", async (req, res) => {
   }
 });
 
+// Registro de usuário (público)
+app.post("/api/registro", async (req, res) => {
+  const { nome, usuario, senha } = req.body;
+
+  if (!nome || !usuario || !senha) {
+    return res.status(400).json({ sucesso: false, erro: "Nome, usuário e senha são obrigatórios." });
+  }
+  if (senha.length < 6) {
+    return res.status(400).json({ sucesso: false, erro: "A senha deve ter no mínimo 6 caracteres." });
+  }
+
+  try {
+    const senhaHash = await bcrypt.hash(senha, 10);
+    await pool.query(
+      `INSERT INTO usuarios (nome, usuario, senha, perfil, cargo, bloqueado)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [nome.trim(), usuario.trim().toLowerCase(), senhaHash, 'usuario', '', 0]
+    );
+    res.json({ sucesso: true, mensagem: "Conta criada com sucesso! Faça login para continuar." });
+  } catch (err) {
+    if (err.code === '23505') return res.status(400).json({ sucesso: false, erro: "Este nome de usuário já está em uso." });
+    console.error("Erro ao registrar:", err.message);
+    return res.status(500).json({ sucesso: false, erro: "Erro ao criar conta." });
+  }
+});
+
 // Criar chamado
 app.post("/api/chamados", async (req, res) => {
-  const { numero, nome, setor, problema, prioridade, descricao, status, data_hora, timestamp } = req.body;
+  const { numero, nome, setor, problema, prioridade, descricao, status, data_hora, timestamp, usuario_id } = req.body;
 
   if (!numero || !nome || !setor || !problema || !prioridade || !descricao) {
     return res.status(400).json({ sucesso: false, erro: "Todos os campos são obrigatórios." });
@@ -151,12 +183,12 @@ app.post("/api/chamados", async (req, res) => {
 
   try {
     const { rows } = await pool.query(
-      `INSERT INTO chamados (numero, nome, setor, problema, prioridade, descricao, status, data_hora, timestamp)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id`,
-      [numero, nome, setor, problema, prioridade, descricao, status || 'Aberto', data_hora, timestamp]
+      `INSERT INTO chamados (numero, nome, setor, problema, prioridade, descricao, status, data_hora, timestamp, usuario_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id`,
+      [numero, nome, setor, problema, prioridade, descricao, status || 'Aberto', data_hora, timestamp, usuario_id || null]
     );
 
-    const novoChamado = { id: rows[0].id, numero, nome, setor, problema, prioridade, descricao, status: status || 'Aberto', data_hora, timestamp };
+    const novoChamado = { id: rows[0].id, numero, nome, setor, problema, prioridade, descricao, status: status || 'Aberto', data_hora, timestamp, usuario_id: usuario_id || null };
     notificarClientes('novo_chamado', novoChamado);
     res.json({ sucesso: true, mensagem: "Chamado criado com sucesso!", chamado: novoChamado });
   } catch (err) {
@@ -176,23 +208,43 @@ app.get("/api/chamados", async (req, res) => {
   }
 });
 
-// Atualizar status do chamado
+// Atualizar status do chamado (com feedback opcional)
 app.put("/api/chamados/:id", async (req, res) => {
   const { id } = req.params;
-  const { status } = req.body;
+  const { status, feedback } = req.body;
 
   if (!status) {
     return res.status(400).json({ sucesso: false, erro: "Status é obrigatório." });
   }
 
   try {
-    const result = await pool.query(`UPDATE chamados SET status = $1 WHERE id = $2`, [status, id]);
+    let result;
+    if (feedback !== undefined) {
+      result = await pool.query(`UPDATE chamados SET status = $1, feedback = $2 WHERE id = $3`, [status, feedback, id]);
+    } else {
+      result = await pool.query(`UPDATE chamados SET status = $1 WHERE id = $2`, [status, id]);
+    }
     if (result.rowCount === 0) return res.status(404).json({ sucesso: false, erro: "Chamado não encontrado." });
-    notificarClientes('status_chamado', { id: parseInt(id), status });
+    notificarClientes('status_chamado', { id: parseInt(id), status, feedback });
     res.json({ sucesso: true, mensagem: "Chamado atualizado com sucesso!" });
   } catch (err) {
     console.error("Erro ao atualizar chamado:", err);
     return res.status(500).json({ sucesso: false, erro: "Erro ao atualizar chamado." });
+  }
+});
+
+// Buscar chamados do próprio usuário
+app.get("/api/meus-chamados/:usuarioId", async (req, res) => {
+  const { usuarioId } = req.params;
+  try {
+    const { rows } = await pool.query(
+      `SELECT * FROM chamados WHERE usuario_id = $1 AND excluido_em IS NULL ORDER BY timestamp DESC`,
+      [usuarioId]
+    );
+    res.json({ sucesso: true, chamados: rows });
+  } catch (err) {
+    console.error("Erro ao buscar meus chamados:", err);
+    return res.status(500).json({ sucesso: false, erro: "Erro ao buscar chamados." });
   }
 });
 

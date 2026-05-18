@@ -224,6 +224,25 @@
                     <strong>Descrição:</strong>
                     <p id="detalheDescricao"></p>
                 </div>
+                <div class="detalhe-item full" id="detalheFeedbackSection" style="display:none;">
+                    <strong>Feedback enviado:</strong>
+                    <p id="detalheFeedback" style="background:#ecfdf5; border:1px solid #6ee7b7;"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modalFeedback">
+        <div class="modal modal-detalhes" style="max-width:480px;">
+            <button class="modal-close" onclick="fecharModalFeedback()">&#10005;</button>
+            <h3 style="text-align:center; margin-bottom:1rem;">&#128172; Feedback para o solicitante</h3>
+            <p style="color:var(--text-light); font-size:0.85rem; text-align:center; margin-bottom:1rem;">Chamado <strong id="feedbackChamadoId"></strong> - Descreva a solução ou orientação para quem abriu o chamado.</p>
+            <div class="form-group">
+                <textarea id="feedbackTexto" rows="4" placeholder="Ex: Problema resolvido. Foi realizada a troca do cabo de rede..." style="width:100%; padding:12px; border:2px solid var(--border); border-radius:8px; font-family:inherit; font-size:0.9rem; resize:vertical;"></textarea>
+            </div>
+            <div style="display:flex; gap:10px; margin-top:1rem;">
+                <button class="btn-modal btn-cancelar" onclick="fecharModalFeedback()" style="flex:1;">Cancelar</button>
+                <button class="btn-modal" id="btnEnviarFeedback" onclick="enviarFeedbackEResolver()" style="flex:1; background:var(--success);">Resolver com Feedback</button>
             </div>
         </div>
     </div>
