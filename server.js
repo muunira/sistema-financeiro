@@ -145,6 +145,10 @@ async function inicializarBanco() {
     await pool.query(`ALTER TABLE chamados ADD COLUMN IF NOT EXISTS usuario_id INTEGER DEFAULT NULL`);
     await pool.query(`ALTER TABLE chamados ADD COLUMN IF NOT EXISTS feedback TEXT DEFAULT NULL`);
 
+    // Corrigir perfis antigos (coordenador, tecnico, analista, gustavo → diretor)
+    await pool.query(`UPDATE usuarios SET perfil = 'diretor' WHERE perfil IN ('coordenador', 'gustavo')`);
+    await pool.query(`UPDATE usuarios SET perfil = 'estagiario' WHERE perfil IN ('tecnico', 'analista')`);
+
     // Usuário padrão para teste
     const { rows } = await pool.query(
       `SELECT COUNT(*) AS total FROM usuarios WHERE usuario = $1`,
@@ -156,7 +160,7 @@ async function inicializarBanco() {
       await pool.query(
         `INSERT INTO usuarios (nome, usuario, senha, perfil, cargo, bloqueado)
          VALUES ($1, $2, $3, $4, $5, $6)`,
-        ["Gustavo TI", "gustavo.ti", senhaHash, "diretor", "Diretor(a) de TI", 0]
+        ["Gustavo TI", "gustavo.ti", senhaHash, "diretor", "", 0]
       );
       console.log("Usuário padrão criado: gustavo.ti / Admin@2024");
     }
