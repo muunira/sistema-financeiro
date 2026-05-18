@@ -220,43 +220,33 @@ function animarNumero(id, valor) {
 }
 
 function renderizarTabela(chamados) {
-    const corpoPendentes = document.getElementById('corpoTabelaPendentes');
-    const corpoResolvidos = document.getElementById('corpoTabelaResolvidos');
-    const tablePendentes = document.getElementById('tablePendentes');
-    const tableResolvidos = document.getElementById('tableResolvidos');
-    const emptyPendentes = document.getElementById('emptyStatePendentes');
-    const emptyResolvidos = document.getElementById('emptyStateResolvidos');
-    const countPendentes = document.getElementById('countPendentes');
-    const countResolvidos = document.getElementById('countResolvidos');
-
     let filtrados = ordenarPorPrioridade(aplicarFiltros(chamados));
 
-    const pendentes = filtrados.filter(c => c.status !== 'Resolvido');
+    const abertos = filtrados.filter(c => c.status === 'Aberto');
+    const andamento = filtrados.filter(c => c.status === 'Em Andamento');
     const resolvidos = filtrados.filter(c => c.status === 'Resolvido');
 
-    countPendentes.textContent = pendentes.length;
-    countResolvidos.textContent = resolvidos.length;
+    renderizarSecao('Abertos', abertos);
+    renderizarSecao('Andamento', andamento);
+    renderizarSecao('Resolvidos', resolvidos);
+}
 
-    // Pendentes
-    if (pendentes.length === 0) {
-        tablePendentes.style.display = 'none';
-        emptyPendentes.style.display = 'block';
-    } else {
-        tablePendentes.style.display = 'block';
-        emptyPendentes.style.display = 'none';
-        corpoPendentes.innerHTML = '';
-        pendentes.forEach(chamado => renderizarLinha(chamado, corpoPendentes));
-    }
+function renderizarSecao(nome, lista) {
+    const corpo = document.getElementById(`corpoTabela${nome}`);
+    const table = document.getElementById(`table${nome}`);
+    const empty = document.getElementById(`emptyState${nome}`);
+    const count = document.getElementById(`count${nome}`);
 
-    // Resolvidos
-    if (resolvidos.length === 0) {
-        tableResolvidos.style.display = 'none';
-        emptyResolvidos.style.display = 'block';
+    count.textContent = lista.length;
+
+    if (lista.length === 0) {
+        table.style.display = 'none';
+        empty.style.display = 'block';
     } else {
-        tableResolvidos.style.display = 'block';
-        emptyResolvidos.style.display = 'none';
-        corpoResolvidos.innerHTML = '';
-        resolvidos.forEach(chamado => renderizarLinha(chamado, corpoResolvidos));
+        table.style.display = 'block';
+        empty.style.display = 'none';
+        corpo.innerHTML = '';
+        lista.forEach(chamado => renderizarLinha(chamado, corpo));
     }
 }
 

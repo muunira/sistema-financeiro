@@ -122,10 +122,10 @@
         </div>
 
         <h3 style="margin:1rem 0 0.5rem; color:var(--text); font-size:1rem; display:flex; align-items:center; gap:8px;">
-            🔴 Chamados Pendentes
-            <span class="badge-count" id="countPendentes" style="font-size:0.75rem;">0</span>
+            🔴 Chamados Abertos
+            <span class="badge-count" id="countAbertos" style="font-size:0.75rem;">0</span>
         </h3>
-        <div class="table-wrapper" id="tablePendentes">
+        <div class="table-wrapper" id="tableAbertos">
             <table class="chamados-table">
                 <thead>
                     <tr>
@@ -140,17 +140,47 @@
                         <th>Ações</th>
                     </tr>
                 </thead>
-                <tbody id="corpoTabelaPendentes"></tbody>
+                <tbody id="corpoTabelaAbertos"></tbody>
             </table>
         </div>
-
-        <div class="empty-state" id="emptyStatePendentes" style="display:none;">
+        <div class="empty-state" id="emptyStateAbertos" style="display:none;">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                 <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
                 <polyline points="22 4 12 14.01 9 11.01"/>
             </svg>
-            <h3>Nenhum chamado pendente</h3>
-            <p>Todos os chamados foram resolvidos!</p>
+            <h3>Nenhum chamado aberto</h3>
+            <p>Não há chamados aguardando atendimento.</p>
+        </div>
+
+        <h3 style="margin:2rem 0 0.5rem; color:var(--text); font-size:1rem; display:flex; align-items:center; gap:8px;">
+            🟡 Em Andamento
+            <span class="badge-count" id="countAndamento" style="font-size:0.75rem;">0</span>
+        </h3>
+        <div class="table-wrapper" id="tableAndamento">
+            <table class="chamados-table">
+                <thead>
+                    <tr>
+                        <th>Nº</th>
+                        <th>Prioridade</th>
+                        <th>Usuário</th>
+                        <th>Setor</th>
+                        <th>Problema</th>
+                        <th>Descrição</th>
+                        <th>Data/Hora</th>
+                        <th>Status</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="corpoTabelaAndamento"></tbody>
+            </table>
+        </div>
+        <div class="empty-state" id="emptyStateAndamento" style="display:none;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12 6 12 12 16 14"/>
+            </svg>
+            <h3>Nenhum chamado em andamento</h3>
+            <p>Chamados em atendimento aparecerão aqui.</p>
         </div>
 
         <h3 style="margin:2rem 0 0.5rem; color:var(--text); font-size:1rem; display:flex; align-items:center; gap:8px;">
@@ -175,7 +205,6 @@
                 <tbody id="corpoTabelaResolvidos"></tbody>
             </table>
         </div>
-
         <div class="empty-state" id="emptyStateResolvidos" style="display:none;">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                 <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/>
