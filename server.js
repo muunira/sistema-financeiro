@@ -59,11 +59,19 @@ async function inicializarBanco() {
         nome TEXT NOT NULL,
         usuario TEXT NOT NULL UNIQUE,
         senha TEXT NOT NULL,
-        perfil TEXT NOT NULL DEFAULT 'tecnico',
+        perfil TEXT NOT NULL DEFAULT 'usuario',
         cargo TEXT DEFAULT '',
-        bloqueado INTEGER NOT NULL DEFAULT 0
+        bloqueado INTEGER NOT NULL DEFAULT 0,
+        email TEXT DEFAULT '',
+        setor TEXT DEFAULT '',
+        criado_em TIMESTAMP DEFAULT NOW()
       )
     `);
+
+    // Adicionar colunas se não existirem (para bancos já existentes)
+    await pool.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS email TEXT DEFAULT ''`);
+    await pool.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS setor TEXT DEFAULT ''`);
+    await pool.query(`ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS criado_em TIMESTAMP DEFAULT NOW()`);
 
     await pool.query(`
       CREATE TABLE IF NOT EXISTS chamados (
@@ -139,7 +147,7 @@ app.post("/login", async (req, res) => {
     return res.json({
       sucesso: true,
       mensagem: "Login realizado com sucesso!",
-      usuario: { id: row.id, nome: row.nome, usuario: row.usuario, perfil: row.perfil, cargo: row.cargo }
+      usuario: { id: row.id, nome: row.nome, usuario: row.usuario, perfil: row.perfil, cargo: row.cargo, email: row.email || '', setor: row.setor || '' }
     });
   } catch (err) {
     console.error("Erro no login:", err);
@@ -149,7 +157,7 @@ app.post("/login", async (req, res) => {
 
 // Registro de usuário (público)
 app.post("/api/registro", async (req, res) => {
-  const { nome, usuario, senha } = req.body;
+  const { nome, usuario, senha, email, setor } = req.body;
 
   if (!nome || !usuario || !senha) {
     return res.status(400).json({ sucesso: false, erro: "Nome, usuário e senha são obrigatórios." });
@@ -161,9 +169,9 @@ app.post("/api/registro", async (req, res) => {
   try {
     const senhaHash = await bcrypt.hash(senha, 10);
     await pool.query(
-      `INSERT INTO usuarios (nome, usuario, senha, perfil, cargo, bloqueado)
-       VALUES ($1, $2, $3, $4, $5, $6)`,
-      [nome.trim(), usuario.trim().toLowerCase(), senhaHash, 'usuario', '', 0]
+      `INSERT INTO usuarios (nome, usuario, senha, perfil, cargo, bloqueado, email, setor)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      [nome.trim(), usuario.trim().toLowerCase(), senhaHash, 'usuario', '', 0, email || '', setor || '']
     );
     res.json({ sucesso: true, mensagem: "Conta criada com sucesso! Faça login para continuar." });
   } catch (err) {
@@ -335,8 +343,12 @@ app.get("/api/chamados/proximo-numero", async (req, res) => {
 // Listar usuários
 app.get("/api/usuarios", async (req, res) => {
   try {
-    const { rows } = await pool.query(`SELECT id, nome, usuario, perfil, cargo, bloqueado FROM usuarios ORDER BY id ASC`);
-    const usuariosComData = rows.map(u => ({ ...u, id: String(u.id), criadoEm: 'N/A' }));
+    const { rows } = await pool.query(`SELECT id, nome, usuario, perfil, cargo, bloqueado, email, setor, criado_em FROM usuarios ORDER BY id ASC`);
+    const usuariosComData = rows.map(u => ({
+      ...u,
+      id: String(u.id),
+      criadoEm: u.criado_em ? new Date(u.criado_em).toLocaleDateString('pt-BR') : 'N/A'
+    }));
     res.json({ sucesso: true, usuarios: usuariosComData });
   } catch (err) {
     console.error("Erro ao listar usuários:", err);
@@ -360,12 +372,12 @@ app.post("/api/usuarios", async (req, res) => {
     const { rows } = await pool.query(
       `INSERT INTO usuarios (nome, usuario, senha, perfil, cargo, bloqueado)
        VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
-      [nome, usuario.trim().toLowerCase(), senhaHash, perfil || 'tecnico', cargo || '', 0]
+      [nome, usuario.trim().toLowerCase(), senhaHash, perfil || 'estagiario', cargo || '', 0]
     );
     res.json({
       sucesso: true,
       mensagem: "Usuário criado com sucesso!",
-      usuario: { id: String(rows[0].id), nome, usuario: usuario.trim().toLowerCase(), perfil: perfil || 'tecnico', cargo: cargo || '' }
+      usuario: { id: String(rows[0].id), nome, usuario: usuario.trim().toLowerCase(), perfil: perfil || 'estagiario', cargo: cargo || '' }
     });
   } catch (err) {
     if (err.code === '23505') return res.status(400).json({ sucesso: false, erro: "Este nome de usuário já está em uso." });

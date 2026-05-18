@@ -277,12 +277,12 @@ async function editarUsuario(id, dados) {
     }
 }
 
-    async function registro(nome, usuario, senha) {
+    async function registro(nome, usuario, senha, email, setor) {
         try {
             const resposta = await fetch("/api/registro", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ nome, usuario, senha })
+                body: JSON.stringify({ nome, usuario, senha, email: email || '', setor: setor || '' })
             });
             const dados = await resposta.json();
             return dados;

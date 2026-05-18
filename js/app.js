@@ -9,6 +9,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (nomeInput && sessao.nome) {
             nomeInput.value = sessao.nome;
         }
+        const setorInput = document.getElementById('setor');
+        if (setorInput && sessao.setor) {
+            setorInput.value = sessao.setor;
+        }
     }
 });
 

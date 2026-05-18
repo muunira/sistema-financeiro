@@ -57,6 +57,28 @@
                 </div>
 
                 <div class="form-group">
+                    <label for="email">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                            <polyline points="22,6 12,13 2,6"/>
+                        </svg>
+                        E-mail
+                    </label>
+                    <input type="email" id="email" placeholder="seu@email.com">
+                </div>
+
+                <div class="form-group">
+                    <label for="setor">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                            <polyline points="9 22 9 12 15 12 15 22"/>
+                        </svg>
+                        Setor / Departamento
+                    </label>
+                    <input type="text" id="setor" placeholder="Ex: Administrativo, RH, Financeiro">
+                </div>
+
+                <div class="form-group">
                     <label for="usuario">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
@@ -152,6 +174,8 @@
             e.preventDefault();
 
             const nome = document.getElementById('nome').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const setor = document.getElementById('setor').value.trim();
             const usuario = document.getElementById('usuario').value.trim();
             const senha = document.getElementById('senha').value;
             const alertaErro = document.getElementById('alertaErro');
@@ -164,7 +188,7 @@
 
             if (!nome || !usuario || !senha) {
                 alertaErro.style.display = 'flex';
-                msgErro.textContent = 'Preencha todos os campos.';
+                msgErro.textContent = 'Preencha todos os campos obrigatórios (Nome, Usuário e Senha).';
                 return;
             }
 
@@ -182,7 +206,7 @@
                 Criando conta...
             `;
 
-            const resultado = await Auth.registro(nome, usuario, senha);
+            const resultado = await Auth.registro(nome, usuario, senha, email, setor);
 
             if (!resultado.sucesso) {
                 alertaErro.style.display = 'flex';
