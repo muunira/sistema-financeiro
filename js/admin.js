@@ -63,7 +63,7 @@ function renderizarUserInfo(sessao) {
                         <div class="dropdown-avatar-lg">${iniciais}</div>
                         <div class="dropdown-perfil-info">
                             <div class="dropdown-perfil-nome">${sessao.nome}</div>
-                            <div class="dropdown-perfil-cargo">${sessao.cargo || 'Equipe de TI'}</div>
+                            <div class="dropdown-perfil-cargo">${sessao.setor || 'Equipe de TI'}</div>
                         </div>
                     </div>
                     <div class="dropdown-perfil-role ${sessao.perfil === 'diretor' ? 'role-diretor' : ''}">
@@ -220,13 +220,6 @@ function criarCardUsuario(usuario) {
         </div>
         <div class="usuario-meta">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
-                <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
-            </svg>
-            ${usuario.cargo || 'Sem cargo definido'}
-        </div>
-        <div class="usuario-meta">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
                 <line x1="16" y1="2" x2="16" y2="6"/>
                 <line x1="8" y1="2" x2="8" y2="6"/>
@@ -264,7 +257,6 @@ async function criarUsuario() {
     const usuario = document.getElementById('novoUsuario').value.trim();
     const senha = document.getElementById('novaSenha').value;
     const email = document.getElementById('novoEmail').value.trim();
-    const cargo = document.getElementById('novoCargo').value.trim();
     const perfil = document.getElementById('novoPerfil').value;
 
     const erroCadastro = document.getElementById('alertaErroCadastro');
@@ -281,7 +273,7 @@ async function criarUsuario() {
         return;
     }
 
-    const resultado = await Auth.criarUsuario({ nome, usuario, senha, cargo, perfil, email });
+    const resultado = await Auth.criarUsuario({ nome, usuario, senha, perfil, email });
 
     if (!resultado.sucesso) {
         erroCadastro.style.display = 'flex';
@@ -313,7 +305,6 @@ async function abrirModalEditar(id) {
     document.getElementById('editarNome').value = usuario.nome;
     document.getElementById('editarLogin').value = usuario.usuario;
     document.getElementById('editarEmail').value = usuario.email || '';
-    document.getElementById('editarCargoUsuario').value = usuario.cargo || '';
 
     document.getElementById('alertaErroEdicao').style.display = 'none';
 
@@ -337,7 +328,6 @@ async function salvarEdicaoUsuario() {
     const nome = document.getElementById('editarNome').value.trim();
     const login = document.getElementById('editarLogin').value.trim();
     const email = document.getElementById('editarEmail').value.trim();
-    const cargo = document.getElementById('editarCargoUsuario').value.trim();
 
     const erroEl = document.getElementById('alertaErroEdicao');
     const msgErro = document.getElementById('msgErroEdicao');
@@ -353,8 +343,7 @@ async function salvarEdicaoUsuario() {
     const resultado = await Auth.editarUsuario(usuarioParaEditarDados, {
         nome: nome,
         usuario: login,
-        email: email,
-        cargo: cargo
+        email: email
     });
 
     if (!resultado.sucesso) {

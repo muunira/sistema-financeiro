@@ -66,10 +66,6 @@
                             <strong>Setor</strong>
                             <span id="perfilSetor"></span>
                         </div>
-                        <div class="detalhe-item">
-                            <strong>Cargo</strong>
-                            <span id="perfilCargo"></span>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -121,7 +117,6 @@
             document.getElementById('perfilPerfil').textContent = rolesLabel[sessao.perfil] || sessao.perfil;
             document.getElementById('perfilEmail').textContent = sessao.email || 'Não informado';
             document.getElementById('perfilSetor').textContent = sessao.setor || 'Não informado';
-            document.getElementById('perfilCargo').textContent = sessao.cargo || 'Não informado';
         }
 
         function renderizarHeader(sessao) {
@@ -184,7 +179,7 @@
                                 <div class="dropdown-avatar-lg">${iniciais}</div>
                                 <div class="dropdown-perfil-info">
                                     <div class="dropdown-perfil-nome">${sessao.nome}</div>
-                                    <div class="dropdown-perfil-cargo">${sessao.cargo || sessao.setor || 'Usuário'}</div>
+                                    <div class="dropdown-perfil-cargo">${sessao.setor || 'Usuário'}</div>
                                 </div>
                             </div>
                             <div class="dropdown-perfil-role ${sessao.perfil === 'diretor' ? 'role-diretor' : ''}">

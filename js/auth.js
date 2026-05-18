@@ -257,7 +257,7 @@ async function editarUsuario(id, dados) {
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ nome: dados.nome, usuario: dados.usuario, cargo: dados.cargo, email: dados.email })
+            body: JSON.stringify({ nome: dados.nome, usuario: dados.usuario, email: dados.email })
         });
         const data = await response.json();
         if (data.sucesso) {
@@ -266,7 +266,6 @@ async function editarUsuario(id, dados) {
             if (sessao && sessao.id === id) {
                 sessao.nome = dados.nome.trim();
                 sessao.usuario = dados.usuario.trim().toLowerCase();
-                sessao.cargo = dados.cargo || '';
                 sessao.email = dados.email || '';
                 localStorage.setItem(KEYS.SESSAO, JSON.stringify(sessao));
             }

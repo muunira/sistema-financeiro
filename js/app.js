@@ -72,7 +72,7 @@ function renderizarHeaderIndex() {
                             <div class="dropdown-perfil-info">
                                 <div class="dropdown-perfil-nome">${sessao.nome}</div>
                                 <div class="dropdown-perfil-cargo">
-                                    ${sessao.cargo || 'Equipe de TI'}
+                                    ${sessao.setor || 'Usuário'}
                                 </div>
                             </div>
                         </div>
