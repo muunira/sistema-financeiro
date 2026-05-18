@@ -3,6 +3,56 @@ const express = require("express");
 const path = require("path");
 const bcrypt = require("bcryptjs");
 const { Pool } = require("pg");
+const nodemailer = require("nodemailer");
+
+// Configuração do email
+const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST || 'smtp.gmail.com',
+  port: parseInt(process.env.SMTP_PORT || '587'),
+  secure: false,
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS
+  }
+});
+
+async function enviarEmailResolucao(emailDestino, chamado, feedback) {
+  if (!emailDestino || !process.env.SMTP_USER) return;
+  try {
+    await transporter.sendMail({
+      from: `"Suporte TI - Porto Velho" <${process.env.SMTP_USER}>`,
+      to: emailDestino,
+      subject: `✅ Chamado #${chamado.numero} Resolvido`,
+      html: `
+        <div style="font-family:'Inter',Arial,sans-serif; max-width:600px; margin:0 auto; padding:20px;">
+          <div style="background:#065f46; color:white; padding:20px; border-radius:12px 12px 0 0; text-align:center;">
+            <h1 style="margin:0; font-size:1.3rem;">✅ Chamado Resolvido</h1>
+            <p style="margin:5px 0 0; opacity:0.9;">Suporte TI - Porto Velho</p>
+          </div>
+          <div style="background:#f9fafb; padding:24px; border:1px solid #e5e7eb; border-top:none; border-radius:0 0 12px 12px;">
+            <p style="margin:0 0 16px; color:#374151;">Olá! Seu chamado foi resolvido pela equipe de TI.</p>
+            <table style="width:100%; border-collapse:collapse; margin-bottom:16px;">
+              <tr><td style="padding:8px 0; color:#6b7280; font-size:0.9rem;">Número:</td><td style="padding:8px 0; font-weight:600;">#${chamado.numero}</td></tr>
+              <tr><td style="padding:8px 0; color:#6b7280; font-size:0.9rem;">Problema:</td><td style="padding:8px 0;">${chamado.problema}</td></tr>
+              <tr><td style="padding:8px 0; color:#6b7280; font-size:0.9rem;">Setor:</td><td style="padding:8px 0;">${chamado.setor}</td></tr>
+              <tr><td style="padding:8px 0; color:#6b7280; font-size:0.9rem;">Status:</td><td style="padding:8px 0; color:#065f46; font-weight:600;">Resolvido ✓</td></tr>
+            </table>
+            ${feedback ? `
+              <div style="background:white; border-left:4px solid #065f46; padding:12px 16px; border-radius:0 8px 8px 0; margin-top:12px;">
+                <strong style="color:#065f46; font-size:0.85rem;">💬 Feedback da Equipe:</strong>
+                <p style="margin:8px 0 0; color:#374151;">${feedback}</p>
+              </div>
+            ` : ''}
+            <p style="margin:20px 0 0; font-size:0.85rem; color:#9ca3af; text-align:center;">Este é um e-mail automático. Não responda.</p>
+          </div>
+        </div>
+      `
+    });
+    console.log(`Email de resolução enviado para ${emailDestino}`);
+  } catch (err) {
+    console.error("Erro ao enviar email:", err.message);
+  }
+}
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -234,6 +284,20 @@ app.put("/api/chamados/:id", async (req, res) => {
     }
     if (result.rowCount === 0) return res.status(404).json({ sucesso: false, erro: "Chamado não encontrado." });
     notificarClientes('status_chamado', { id: parseInt(id), status, feedback });
+
+    // Enviar email ao usuário quando chamado for resolvido
+    if (status === 'Resolvido') {
+      const chamadoResult = await pool.query(`SELECT * FROM chamados WHERE id = $1`, [id]);
+      const chamado = chamadoResult.rows[0];
+      if (chamado && chamado.usuario_id) {
+        const userResult = await pool.query(`SELECT email FROM usuarios WHERE id = $1`, [chamado.usuario_id]);
+        const usuario = userResult.rows[0];
+        if (usuario && usuario.email) {
+          enviarEmailResolucao(usuario.email, chamado, feedback || chamado.feedback);
+        }
+      }
+    }
+
     res.json({ sucesso: true, mensagem: "Chamado atualizado com sucesso!" });
   } catch (err) {
     console.error("Erro ao atualizar chamado:", err);
