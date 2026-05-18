@@ -46,6 +46,17 @@
 
             <form id="formCadastro" class="form-login">
                 <div class="form-group">
+                    <label for="nomeCompleto">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                            <circle cx="12" cy="7" r="4"/>
+                        </svg>
+                        Nome Completo
+                    </label>
+                    <input type="text" id="nomeCompleto" placeholder="Ex: João da Silva" required>
+                </div>
+
+                <div class="form-group">
                     <label for="usuario">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
@@ -175,11 +186,12 @@
         document.getElementById('formCadastro').addEventListener('submit', async function(e) {
             e.preventDefault();
 
+            const nomeCompleto = document.getElementById('nomeCompleto').value.trim();
             const usuario = document.getElementById('usuario').value.trim();
             const email = document.getElementById('email').value.trim();
             const setor = document.getElementById('setor').value;
             const senha = document.getElementById('senha').value;
-            const nome = usuario;
+            const nome = nomeCompleto;
             const alertaErro = document.getElementById('alertaErro');
             const alertaSucesso = document.getElementById('alertaSucesso');
             const msgErro = document.getElementById('msgErro');
@@ -188,9 +200,9 @@
             alertaErro.style.display = 'none';
             alertaSucesso.style.display = 'none';
 
-            if (!usuario || !senha) {
+            if (!nomeCompleto || !usuario || !senha) {
                 alertaErro.style.display = 'flex';
-                msgErro.textContent = 'Preencha os campos obrigatórios (Usuário e Senha).';
+                msgErro.textContent = 'Preencha os campos obrigatórios (Nome, Usuário e Senha).';
                 return;
             }
 
