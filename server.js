@@ -422,7 +422,7 @@ app.get("/api/usuarios", async (req, res) => {
 
 // Criar usuário
 app.post("/api/usuarios", async (req, res) => {
-  const { nome, usuario, senha, cargo, perfil } = req.body;
+  const { nome, usuario, senha, cargo, perfil, email } = req.body;
 
   if (!nome || !usuario || !senha) {
     return res.status(400).json({ sucesso: false, erro: "Nome, usuário e senha são obrigatórios." });
@@ -434,14 +434,14 @@ app.post("/api/usuarios", async (req, res) => {
   try {
     const senhaHash = await bcrypt.hash(senha, 10);
     const { rows } = await pool.query(
-      `INSERT INTO usuarios (nome, usuario, senha, perfil, cargo, bloqueado)
-       VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
-      [nome, usuario.trim().toLowerCase(), senhaHash, perfil || 'estagiario', cargo || '', 0]
+      `INSERT INTO usuarios (nome, usuario, senha, perfil, cargo, bloqueado, email)
+       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
+      [nome, usuario.trim().toLowerCase(), senhaHash, perfil || 'estagiario', cargo || '', 0, email || '']
     );
     res.json({
       sucesso: true,
       mensagem: "Usuário criado com sucesso!",
-      usuario: { id: String(rows[0].id), nome, usuario: usuario.trim().toLowerCase(), perfil: perfil || 'estagiario', cargo: cargo || '' }
+      usuario: { id: String(rows[0].id), nome, usuario: usuario.trim().toLowerCase(), perfil: perfil || 'estagiario', cargo: cargo || '', email: email || '' }
     });
   } catch (err) {
     if (err.code === '23505') return res.status(400).json({ sucesso: false, erro: "Este nome de usuário já está em uso." });
@@ -453,7 +453,7 @@ app.post("/api/usuarios", async (req, res) => {
 // Atualizar usuário
 app.put("/api/usuarios/:id", async (req, res) => {
   const { id } = req.params;
-  const { nome, usuario, cargo } = req.body;
+  const { nome, usuario, cargo, email } = req.body;
 
   if (!nome || !usuario) {
     return res.status(400).json({ sucesso: false, erro: "Nome e usuário são obrigatórios." });
@@ -463,7 +463,7 @@ app.put("/api/usuarios/:id", async (req, res) => {
     const check = await pool.query(`SELECT * FROM usuarios WHERE id = $1`, [id]);
     if (check.rows.length === 0) return res.status(404).json({ sucesso: false, erro: "Usuário não encontrado." });
 
-    await pool.query(`UPDATE usuarios SET nome = $1, usuario = $2, cargo = $3 WHERE id = $4`, [nome, usuario.trim().toLowerCase(), cargo || '', id]);
+    await pool.query(`UPDATE usuarios SET nome = $1, usuario = $2, cargo = $3, email = $4 WHERE id = $5`, [nome, usuario.trim().toLowerCase(), cargo || '', email || '', id]);
     res.json({ sucesso: true, mensagem: "Usuário atualizado com sucesso!" });
   } catch (err) {
     if (err.code === '23505') return res.status(400).json({ sucesso: false, erro: "Este login já está sendo usado por outro usuário." });

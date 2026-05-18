@@ -213,6 +213,13 @@ function criarCardUsuario(usuario) {
         </div>
         <div class="usuario-meta">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                <polyline points="22,6 12,13 2,6"/>
+            </svg>
+            ${usuario.email || 'Sem e-mail'}
+        </div>
+        <div class="usuario-meta">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
                 <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
             </svg>
@@ -256,6 +263,7 @@ async function criarUsuario() {
     const nome = document.getElementById('novoNome').value.trim();
     const usuario = document.getElementById('novoUsuario').value.trim();
     const senha = document.getElementById('novaSenha').value;
+    const email = document.getElementById('novoEmail').value.trim();
     const cargo = document.getElementById('novoCargo').value.trim();
     const perfil = document.getElementById('novoPerfil').value;
 
@@ -273,7 +281,7 @@ async function criarUsuario() {
         return;
     }
 
-    const resultado = await Auth.criarUsuario({ nome, usuario, senha, cargo, perfil });
+    const resultado = await Auth.criarUsuario({ nome, usuario, senha, cargo, perfil, email });
 
     if (!resultado.sucesso) {
         erroCadastro.style.display = 'flex';
@@ -304,6 +312,7 @@ async function abrirModalEditar(id) {
     document.getElementById('editarId').value = usuario.id;
     document.getElementById('editarNome').value = usuario.nome;
     document.getElementById('editarLogin').value = usuario.usuario;
+    document.getElementById('editarEmail').value = usuario.email || '';
     document.getElementById('editarCargoUsuario').value = usuario.cargo || '';
 
     document.getElementById('alertaErroEdicao').style.display = 'none';
@@ -327,6 +336,7 @@ async function salvarEdicaoUsuario() {
 
     const nome = document.getElementById('editarNome').value.trim();
     const login = document.getElementById('editarLogin').value.trim();
+    const email = document.getElementById('editarEmail').value.trim();
     const cargo = document.getElementById('editarCargoUsuario').value.trim();
 
     const erroEl = document.getElementById('alertaErroEdicao');
@@ -343,6 +353,7 @@ async function salvarEdicaoUsuario() {
     const resultado = await Auth.editarUsuario(usuarioParaEditarDados, {
         nome: nome,
         usuario: login,
+        email: email,
         cargo: cargo
     });
 

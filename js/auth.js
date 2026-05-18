@@ -170,7 +170,7 @@ const Auth = (() => {
     }
 
     async function criarUsuario(dados) {
-        const { nome, usuario, senha, cargo, perfil } = dados;
+        const { nome, usuario, senha, cargo, perfil, email } = dados;
 
         if (senha.length < 6) {
             return { sucesso: false, msg: 'A senha deve ter no mínimo 6 caracteres.' };
@@ -182,7 +182,7 @@ const Auth = (() => {
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ nome, usuario, senha, cargo, perfil })
+                body: JSON.stringify({ nome, usuario, senha, cargo, perfil, email })
             });
             const data = await response.json();
             if (data.sucesso) {
@@ -257,7 +257,7 @@ async function editarUsuario(id, dados) {
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ nome: dados.nome, usuario: dados.usuario, cargo: dados.cargo })
+            body: JSON.stringify({ nome: dados.nome, usuario: dados.usuario, cargo: dados.cargo, email: dados.email })
         });
         const data = await response.json();
         if (data.sucesso) {
@@ -267,6 +267,7 @@ async function editarUsuario(id, dados) {
                 sessao.nome = dados.nome.trim();
                 sessao.usuario = dados.usuario.trim().toLowerCase();
                 sessao.cargo = dados.cargo || '';
+                sessao.email = dados.email || '';
                 localStorage.setItem(KEYS.SESSAO, JSON.stringify(sessao));
             }
             return { sucesso: true, msg: data.mensagem };
