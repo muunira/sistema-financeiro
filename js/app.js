@@ -1,18 +1,21 @@
 document.addEventListener('DOMContentLoaded', () => {
+    const sessao = Auth.verificarSessao();
+    if (!sessao) {
+        window.location.href = 'login.html';
+        return;
+    }
+
     document.getElementById('formChamado').addEventListener('submit', enviarChamado);
     mostrarMeusChamados();
     renderizarHeaderIndex();
 
-    const sessao = Auth.verificarSessao();
-    if (sessao) {
-        const nomeInput = document.getElementById('nome');
-        if (nomeInput && sessao.nome) {
-            nomeInput.value = sessao.nome;
-        }
-        const setorInput = document.getElementById('setor');
-        if (setorInput && sessao.setor) {
-            setorInput.value = sessao.setor;
-        }
+    const nomeInput = document.getElementById('nome');
+    if (nomeInput && sessao.nome) {
+        nomeInput.value = sessao.nome;
+    }
+    const setorInput = document.getElementById('setor');
+    if (setorInput && sessao.setor) {
+        setorInput.value = sessao.setor;
     }
 });
 
@@ -136,17 +139,6 @@ function renderizarHeaderIndex() {
             }
         });
 
-    } else {
-        nav.innerHTML = `
-            <a href="login.html" class="btn-login-header">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
-                    <polyline points="10 17 15 12 10 7"/>
-                    <line x1="15" y1="12" x2="3" y2="12"/>
-                </svg>
-                <span>Entrar / Cadastrar</span>
-            </a>
-        `;
     }
 }
 
