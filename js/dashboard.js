@@ -516,11 +516,11 @@ function aplicarFiltros(chamados) {
     return chamados.filter(c => {
         return (status === 'todos' || c.status === status)
             && (prioridade === 'todos' || c.prioridade === prioridade)
-            && (!busca || c.nome.toLowerCase().includes(busca)
-                || c.setor.toLowerCase().includes(busca)
-                || c.problema.toLowerCase().includes(busca)
-                || c.descricao.toLowerCase().includes(busca)
-                || c.id.includes(busca));
+            && (!busca || (c.nome || '').toLowerCase().includes(busca)
+                || (c.setor || '').toLowerCase().includes(busca)
+                || (c.problema || '').toLowerCase().includes(busca)
+                || (c.descricao || '').toLowerCase().includes(busca)
+                || (c.numero || '').toString().includes(busca));
     });
 }
 
