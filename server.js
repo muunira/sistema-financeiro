@@ -272,7 +272,7 @@ app.post("/api/chamados", async (req, res) => {
 // Listar chamados (exclui os da lixeira)
 app.get("/api/chamados", async (req, res) => {
   try {
-    const { rows } = await pool.query(`SELECT * FROM chamados WHERE excluido_em IS NULL ORDER BY timestamp DESC`);
+    const { rows } = await pool.query(`SELECT c.*, COALESCE(NULLIF(c.setor, ''), u.setor, '') AS setor FROM chamados c LEFT JOIN usuarios u ON c.usuario_id = u.id WHERE c.excluido_em IS NULL ORDER BY c.timestamp DESC`);
     res.json({ sucesso: true, chamados: rows });
   } catch (err) {
     console.error("Erro ao listar chamados:", err);
@@ -329,7 +329,7 @@ app.get("/api/meus-chamados/:usuarioId", async (req, res) => {
   const { usuarioId } = req.params;
   try {
     const { rows } = await pool.query(
-      `SELECT * FROM chamados WHERE usuario_id = $1 AND excluido_em IS NULL ORDER BY timestamp DESC`,
+      `SELECT c.*, COALESCE(NULLIF(c.setor, ''), u.setor, '') AS setor FROM chamados c LEFT JOIN usuarios u ON c.usuario_id = u.id WHERE c.usuario_id = $1 AND c.excluido_em IS NULL ORDER BY c.timestamp DESC`,
       [usuarioId]
     );
     res.json({ sucesso: true, chamados: rows });
@@ -358,7 +358,7 @@ app.delete("/api/chamados/:id", async (req, res) => {
 // Listar chamados na lixeira
 app.get("/api/chamados/lixeira", async (req, res) => {
   try {
-    const { rows } = await pool.query(`SELECT * FROM chamados WHERE excluido_em IS NOT NULL ORDER BY excluido_em DESC`);
+    const { rows } = await pool.query(`SELECT c.*, COALESCE(NULLIF(c.setor, ''), u.setor, '') AS setor FROM chamados c LEFT JOIN usuarios u ON c.usuario_id = u.id WHERE c.excluido_em IS NOT NULL ORDER BY c.excluido_em DESC`);
     res.json({ sucesso: true, chamados: rows });
   } catch (err) {
     console.error("Erro ao listar lixeira:", err);
