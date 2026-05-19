@@ -695,7 +695,7 @@ body {
 }
 
 .table-wrapper {
-    overflow-x: auto;
+    overflow-x: hidden;
     background: var(--bg-card);
     box-shadow: var(--shadow);
     border-radius: 0 0 var(--radius) var(--radius);
@@ -704,7 +704,6 @@ body {
 .chamados-table {
     width: 100%;
     border-collapse: collapse;
-    min-width: 900px;
     table-layout: fixed;
 }
 
