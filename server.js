@@ -92,6 +92,24 @@ function notificarClientes(evento, dados) {
   });
 }
 
+// Teste de email (acessar /api/teste-email para verificar configuração)
+app.get("/api/teste-email", async (req, res) => {
+  if (!resend) {
+    return res.json({ sucesso: false, erro: "Resend não configurado. RESEND_API_KEY ausente ou pacote não encontrado.", apiKeyPresente: !!process.env.RESEND_API_KEY, resendCarregado: !!Resend });
+  }
+  try {
+    const result = await resend.emails.send({
+      from: "Suporte TI - Porto Velho <onboarding@resend.dev>",
+      to: "munira_majdoub@hotmail.com",
+      subject: "Teste - Sistema de Chamados",
+      html: "<p>Se você recebeu este email, o envio está funcionando!</p>"
+    });
+    res.json({ sucesso: true, mensagem: "Email de teste enviado!", resultado: result });
+  } catch (err) {
+    res.json({ sucesso: false, erro: err.message, detalhes: err });
+  }
+});
+
 // Abre a página inicial
 app.get("/", (req, res) => {
   res.redirect("/login");
