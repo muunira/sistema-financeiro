@@ -447,7 +447,7 @@ async function verDetalhes(id) {
     document.getElementById('detalheStatus').innerHTML = getBadgeStatus(chamado.status);
     document.getElementById('detalheDescricao').textContent = chamado.descricao;
     const ultimaAtt = document.getElementById('detalheUltimaAtt');
-    if (ultimaAtt) ultimaAtt.textContent = '—';
+    if (ultimaAtt) ultimaAtt.textContent = chamado.atualizado_em || '—';
 
     const feedbackSection = document.getElementById('detalheFeedbackSection');
     const feedbackEl = document.getElementById('detalheFeedback');

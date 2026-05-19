@@ -73,7 +73,11 @@ const pool = new Pool({
 });
 
 pool.connect()
-  .then(() => console.log("Conectado ao banco de dados PostgreSQL"))
+  .then(async () => {
+    console.log("Conectado ao banco de dados PostgreSQL");
+    // Garantir coluna atualizado_em na tabela chamados
+    await pool.query(`ALTER TABLE chamados ADD COLUMN IF NOT EXISTS atualizado_em TEXT`).catch(() => {});
+  })
   .catch(err => console.error("Erro ao conectar ao banco:", err));
 
 app.use(express.json());
@@ -297,11 +301,12 @@ app.put("/api/chamados/:id", async (req, res) => {
   }
 
   try {
+    const agora = new Date().toLocaleString('pt-BR');
     let result;
     if (feedback !== undefined) {
-      result = await pool.query(`UPDATE chamados SET status = $1, feedback = $2 WHERE id = $3`, [status, feedback, id]);
+      result = await pool.query(`UPDATE chamados SET status = $1, feedback = $2, atualizado_em = $3 WHERE id = $4`, [status, feedback, agora, id]);
     } else {
-      result = await pool.query(`UPDATE chamados SET status = $1 WHERE id = $2`, [status, id]);
+      result = await pool.query(`UPDATE chamados SET status = $1, atualizado_em = $2 WHERE id = $3`, [status, agora, id]);
     }
     if (result.rowCount === 0) return res.status(404).json({ sucesso: false, erro: "Chamado não encontrado." });
     notificarClientes('status_chamado', { id: parseInt(id), status, feedback });
