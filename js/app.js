@@ -17,6 +17,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (emailInput && sessao.email) {
         emailInput.value = sessao.email;
     }
+    const setorInput = document.getElementById('setor');
+    if (setorInput && sessao.setor) {
+        setorInput.value = sessao.setor;
+    }
 });
 
 function renderizarHeaderIndex() {
@@ -164,12 +168,12 @@ async function enviarChamado(e) {
     const sessao = Auth.verificarSessao();
     const nome = document.getElementById('nome').value.trim();
     const emailChamado = document.getElementById('emailChamado').value.trim();
-    const setor = sessao ? sessao.setor || '' : '';
+    const setor = document.getElementById('setor').value;
     const problema = document.getElementById('problema').value;
     const prioridade = document.querySelector('input[name="prioridade"]:checked');
     const descricao = document.getElementById('descricao').value.trim();
 
-    if (!nome || !problema || !prioridade || !descricao) {
+    if (!nome || !setor || !problema || !prioridade || !descricao) {
         alert('Por favor, preencha todos os campos.');
         return;
     }
@@ -197,6 +201,7 @@ async function enviarChamado(e) {
     document.getElementById('formChamado').reset();
     if (sessao && sessao.nome) document.getElementById('nome').value = sessao.nome;
     if (sessao && sessao.email) document.getElementById('emailChamado').value = sessao.email;
+    if (sessao && sessao.setor) document.getElementById('setor').value = sessao.setor;
     mostrarMeusChamados();
 }
 
