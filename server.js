@@ -254,13 +254,20 @@ app.post("/api/chamados", async (req, res) => {
   }
 
   try {
+    // Se setor não veio preenchido, buscar do cadastro do usuário
+    let setorFinal = setor || '';
+    if (!setorFinal && usuario_id) {
+      const userResult = await pool.query(`SELECT setor FROM usuarios WHERE id = $1`, [usuario_id]);
+      if (userResult.rows[0]) setorFinal = userResult.rows[0].setor || '';
+    }
+
     const { rows } = await pool.query(
       `INSERT INTO chamados (numero, nome, setor, problema, prioridade, descricao, status, data_hora, timestamp, usuario_id, email)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id`,
-      [numero, nome, setor, problema, prioridade, descricao, status || 'Aberto', data_hora, timestamp, usuario_id || null, email || '']
+      [numero, nome, setorFinal, problema, prioridade, descricao, status || 'Aberto', data_hora, timestamp, usuario_id || null, email || '']
     );
 
-    const novoChamado = { id: rows[0].id, numero, nome, setor, problema, prioridade, descricao, status: status || 'Aberto', data_hora, timestamp, usuario_id: usuario_id || null };
+    const novoChamado = { id: rows[0].id, numero, nome, setor: setorFinal, problema, prioridade, descricao, status: status || 'Aberto', data_hora, timestamp, usuario_id: usuario_id || null };
     notificarClientes('novo_chamado', novoChamado);
     res.json({ sucesso: true, mensagem: "Chamado criado com sucesso!", chamado: novoChamado });
   } catch (err) {
@@ -272,7 +279,7 @@ app.post("/api/chamados", async (req, res) => {
 // Listar chamados (exclui os da lixeira)
 app.get("/api/chamados", async (req, res) => {
   try {
-    const { rows } = await pool.query(`SELECT c.*, COALESCE(NULLIF(c.setor, ''), u.setor, '') AS setor FROM chamados c LEFT JOIN usuarios u ON c.usuario_id = u.id WHERE c.excluido_em IS NULL ORDER BY c.timestamp DESC`);
+    const { rows } = await pool.query(`SELECT c.*, COALESCE(NULLIF(c.setor, ''), u.setor, '') AS setor FROM chamados c LEFT JOIN usuarios u ON c.usuario_id::text = u.id::text WHERE c.excluido_em IS NULL ORDER BY c.timestamp DESC`);
     res.json({ sucesso: true, chamados: rows });
   } catch (err) {
     console.error("Erro ao listar chamados:", err);
@@ -329,7 +336,7 @@ app.get("/api/meus-chamados/:usuarioId", async (req, res) => {
   const { usuarioId } = req.params;
   try {
     const { rows } = await pool.query(
-      `SELECT c.*, COALESCE(NULLIF(c.setor, ''), u.setor, '') AS setor FROM chamados c LEFT JOIN usuarios u ON c.usuario_id = u.id WHERE c.usuario_id = $1 AND c.excluido_em IS NULL ORDER BY c.timestamp DESC`,
+      `SELECT c.*, COALESCE(NULLIF(c.setor, ''), u.setor, '') AS setor FROM chamados c LEFT JOIN usuarios u ON c.usuario_id::text = u.id::text WHERE c.usuario_id::text = $1::text AND c.excluido_em IS NULL ORDER BY c.timestamp DESC`,
       [usuarioId]
     );
     res.json({ sucesso: true, chamados: rows });
@@ -358,7 +365,7 @@ app.delete("/api/chamados/:id", async (req, res) => {
 // Listar chamados na lixeira
 app.get("/api/chamados/lixeira", async (req, res) => {
   try {
-    const { rows } = await pool.query(`SELECT c.*, COALESCE(NULLIF(c.setor, ''), u.setor, '') AS setor FROM chamados c LEFT JOIN usuarios u ON c.usuario_id = u.id WHERE c.excluido_em IS NOT NULL ORDER BY c.excluido_em DESC`);
+    const { rows } = await pool.query(`SELECT c.*, COALESCE(NULLIF(c.setor, ''), u.setor, '') AS setor FROM chamados c LEFT JOIN usuarios u ON c.usuario_id::text = u.id::text WHERE c.excluido_em IS NOT NULL ORDER BY c.excluido_em DESC`);
     res.json({ sucesso: true, chamados: rows });
   } catch (err) {
     console.error("Erro ao listar lixeira:", err);
