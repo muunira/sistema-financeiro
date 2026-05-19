@@ -13,10 +13,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (nomeInput && sessao.nome) {
         nomeInput.value = sessao.nome;
     }
-    const setorInput = document.getElementById('setor');
-    if (setorInput && sessao.setor) {
-        setorInput.value = sessao.setor;
-    }
     const emailInput = document.getElementById('emailChamado');
     if (emailInput && sessao.email) {
         emailInput.value = sessao.email;
@@ -165,21 +161,21 @@ function toggleMenuIndex() {
 async function enviarChamado(e) {
     e.preventDefault();
 
+    const sessao = Auth.verificarSessao();
     const nome = document.getElementById('nome').value.trim();
     const emailChamado = document.getElementById('emailChamado').value.trim();
-    const setor = document.getElementById('setor').value;
+    const setor = sessao ? sessao.setor || '' : '';
     const problema = document.getElementById('problema').value;
     const prioridade = document.querySelector('input[name="prioridade"]:checked');
     const descricao = document.getElementById('descricao').value.trim();
 
-    if (!nome || !setor || !problema || !prioridade || !descricao) {
+    if (!nome || !problema || !prioridade || !descricao) {
         alert('Por favor, preencha todos os campos.');
         return;
     }
 
     const numero = await gerarNumeroChamado();
 
-    const sessao = Auth.verificarSessao();
     const chamado = {
         numero: numero,
         nome: nome,
@@ -199,6 +195,8 @@ async function enviarChamado(e) {
     document.getElementById('numeroChamado').textContent = `#${numero}`;
     document.getElementById('modalSucesso').classList.add('active');
     document.getElementById('formChamado').reset();
+    if (sessao && sessao.nome) document.getElementById('nome').value = sessao.nome;
+    if (sessao && sessao.email) document.getElementById('emailChamado').value = sessao.email;
     mostrarMeusChamados();
 }
 

@@ -249,7 +249,7 @@ app.post("/api/registro", async (req, res) => {
 app.post("/api/chamados", async (req, res) => {
   const { numero, nome, email, setor, problema, prioridade, descricao, status, data_hora, timestamp, usuario_id } = req.body;
 
-  if (!numero || !nome || !setor || !problema || !prioridade || !descricao) {
+  if (!numero || !nome || !problema || !prioridade || !descricao) {
     return res.status(400).json({ sucesso: false, erro: "Todos os campos são obrigatórios." });
   }
 
