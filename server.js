@@ -3,39 +3,22 @@ const express = require("express");
 const path = require("path");
 const bcrypt = require("bcryptjs");
 const { Pool } = require("pg");
-const nodemailer = require("nodemailer");
+const { Resend } = require("resend");
 
-// Configuração do email (Gmail ou Outlook)
-function criarTransporter() {
-  const user = process.env.SMTP_USER || '';
-  const isOutlook = user.includes('@outlook') || user.includes('@hotmail') || user.includes('@live');
-  const host = process.env.SMTP_HOST || (isOutlook ? 'smtp-mail.outlook.com' : 'smtp.gmail.com');
-  const port = parseInt(process.env.SMTP_PORT || '587');
-
-  return nodemailer.createTransport({
-    host,
-    port,
-    secure: false,
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS
-    },
-    tls: { ciphers: 'SSLv3', rejectUnauthorized: false }
-  });
-}
-const transporter = criarTransporter();
+// Configuração do Resend para envio de emails
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 async function enviarEmailResolucao(emailDestino, chamado, feedback) {
-  if (!emailDestino || !process.env.SMTP_USER) return;
+  if (!emailDestino || !process.env.RESEND_API_KEY) return;
   try {
-    await transporter.sendMail({
-      from: `"Suporte TI - Porto Velho" <${process.env.SMTP_USER}>`,
+    await resend.emails.send({
+      from: "Suporte TI - Porto Velho <onboarding@resend.dev>",
       to: emailDestino,
-      subject: `✅ Chamado #${chamado.numero} Resolvido`,
+      subject: `Chamado #${chamado.numero} Resolvido`,
       html: `
         <div style="font-family:'Inter',Arial,sans-serif; max-width:600px; margin:0 auto; padding:20px;">
           <div style="background:#065f46; color:white; padding:20px; border-radius:12px 12px 0 0; text-align:center;">
-            <h1 style="margin:0; font-size:1.3rem;">✅ Chamado Resolvido</h1>
+            <h1 style="margin:0; font-size:1.3rem;">Chamado Resolvido</h1>
             <p style="margin:5px 0 0; opacity:0.9;">Suporte TI - Porto Velho</p>
           </div>
           <div style="background:#f9fafb; padding:24px; border:1px solid #e5e7eb; border-top:none; border-radius:0 0 12px 12px;">
@@ -44,11 +27,11 @@ async function enviarEmailResolucao(emailDestino, chamado, feedback) {
               <tr><td style="padding:8px 0; color:#6b7280; font-size:0.9rem;">Número:</td><td style="padding:8px 0; font-weight:600;">#${chamado.numero}</td></tr>
               <tr><td style="padding:8px 0; color:#6b7280; font-size:0.9rem;">Problema:</td><td style="padding:8px 0;">${chamado.problema}</td></tr>
               <tr><td style="padding:8px 0; color:#6b7280; font-size:0.9rem;">Setor:</td><td style="padding:8px 0;">${chamado.setor}</td></tr>
-              <tr><td style="padding:8px 0; color:#6b7280; font-size:0.9rem;">Status:</td><td style="padding:8px 0; color:#065f46; font-weight:600;">Resolvido ✓</td></tr>
+              <tr><td style="padding:8px 0; color:#6b7280; font-size:0.9rem;">Status:</td><td style="padding:8px 0; color:#065f46; font-weight:600;">Resolvido</td></tr>
             </table>
             ${feedback ? `
               <div style="background:white; border-left:4px solid #065f46; padding:12px 16px; border-radius:0 8px 8px 0; margin-top:12px;">
-                <strong style="color:#065f46; font-size:0.85rem;">💬 Feedback da Equipe:</strong>
+                <strong style="color:#065f46; font-size:0.85rem;">Feedback da Equipe:</strong>
                 <p style="margin:8px 0 0; color:#374151;">${feedback}</p>
               </div>
             ` : ''}
