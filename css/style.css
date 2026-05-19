@@ -705,7 +705,27 @@ body {
     width: 100%;
     border-collapse: collapse;
     min-width: 900px;
+    table-layout: fixed;
 }
+
+.chamados-table th:nth-child(1),
+.chamados-table td:nth-child(1) { width: 6%; }
+.chamados-table th:nth-child(2),
+.chamados-table td:nth-child(2) { width: 9%; }
+.chamados-table th:nth-child(3),
+.chamados-table td:nth-child(3) { width: 11%; }
+.chamados-table th:nth-child(4),
+.chamados-table td:nth-child(4) { width: 10%; }
+.chamados-table th:nth-child(5),
+.chamados-table td:nth-child(5) { width: 12%; }
+.chamados-table th:nth-child(6),
+.chamados-table td:nth-child(6) { width: 16%; }
+.chamados-table th:nth-child(7),
+.chamados-table td:nth-child(7) { width: 12%; }
+.chamados-table th:nth-child(8),
+.chamados-table td:nth-child(8) { width: 9%; }
+.chamados-table th:nth-child(9),
+.chamados-table td:nth-child(9) { width: 15%; }
 
 .chamados-table thead {
     background: var(--bg);
