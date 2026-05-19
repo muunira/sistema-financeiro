@@ -3,13 +3,14 @@ const express = require("express");
 const path = require("path");
 const bcrypt = require("bcryptjs");
 const { Pool } = require("pg");
-const { Resend } = require("resend");
+let Resend;
+try { Resend = require("resend").Resend; } catch(e) {}
 
 // Configuração do Resend para envio de emails
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resend = process.env.RESEND_API_KEY && Resend ? new Resend(process.env.RESEND_API_KEY) : null;
 
 async function enviarEmailResolucao(emailDestino, chamado, feedback) {
-  if (!emailDestino || !process.env.RESEND_API_KEY) return;
+  if (!emailDestino || !resend) return;
   try {
     await resend.emails.send({
       from: "Suporte TI - Porto Velho <onboarding@resend.dev>",
