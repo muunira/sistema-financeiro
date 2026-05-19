@@ -168,12 +168,14 @@ async function enviarChamado(e) {
     const sessao = Auth.verificarSessao();
     const nome = document.getElementById('nome').value.trim();
     const emailChamado = document.getElementById('emailChamado').value.trim();
-    const setor = document.getElementById('setor').value;
+    const setorSelect = document.getElementById('setor').value;
+    const setorOutro = document.getElementById('setorOutro').value.trim();
+    const setor = setorSelect === 'Outro' ? setorOutro : setorSelect;
     const problema = document.getElementById('problema').value;
     const prioridade = document.querySelector('input[name="prioridade"]:checked');
     const descricao = document.getElementById('descricao').value.trim();
 
-    if (!nome || !setor || !problema || !prioridade || !descricao) {
+    if (!nome || !setor || (setorSelect === 'Outro' && !setorOutro) || !problema || !prioridade || !descricao) {
         alert('Por favor, preencha todos os campos.');
         return;
     }
@@ -202,7 +204,22 @@ async function enviarChamado(e) {
     if (sessao && sessao.nome) document.getElementById('nome').value = sessao.nome;
     if (sessao && sessao.email) document.getElementById('emailChamado').value = sessao.email;
     if (sessao && sessao.setor) document.getElementById('setor').value = sessao.setor;
+    document.getElementById('setorOutro').value = '';
+    toggleSetorOutro();
     mostrarMeusChamados();
+}
+
+function toggleSetorOutro() {
+    const select = document.getElementById('setor');
+    const outro = document.getElementById('setorOutro');
+    if (select.value === 'Outro') {
+        outro.style.display = 'block';
+        outro.required = true;
+    } else {
+        outro.style.display = 'none';
+        outro.required = false;
+        outro.value = '';
+    }
 }
 
 async function gerarNumeroChamado() {

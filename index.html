@@ -74,7 +74,7 @@
                         </svg>
                         Setor / Departamento
                     </label>
-                    <select id="setor" name="setor" required>
+                    <select id="setor" name="setor" required onchange="toggleSetorOutro()">
                         <option value="">Selecione seu setor</option>
                         <option value="Diretoria">Diretoria</option>
                         <option value="Financeiro">Financeiro</option>
@@ -88,6 +88,7 @@
                         <option value="Depósito">Depósito</option>
                         <option value="Outro">Outro</option>
                     </select>
+                    <input type="text" id="setorOutro" name="setorOutro" placeholder="Qual setor?" style="display:none; margin-top:8px;" required>
                 </div>
 
                 <!-- Tipo de Problema -->
