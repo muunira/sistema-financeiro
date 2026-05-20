@@ -459,19 +459,22 @@ async function verDetalhes(id) {
     document.getElementById('detalheProblema').textContent = chamado.problema;
     document.getElementById('detalhePrioridade').innerHTML = getBadgePrioridade(chamado.prioridade);
     function formatarBrasilia(data) {
-        if (!data) return '—';
+    if (!data) return '—';
 
-        // Se vier no formato BR: 19/05/2026, 15:10:37
-        if (typeof data === 'string' && data.includes('/')) {
-            return data;
-        }
+    // Se já vier no formato BR, tenta interpretar e converter certo
+    if (typeof data === 'string' && data.includes('/')) {
+        const [dataParte, horaParte] = data.replace(',', '').split(' ');
+        const [dia, mes, ano] = dataParte.split('/');
+        const [hora = '0', minuto = '0', segundo = '0'] = (horaParte || '00:00:00').split(':');
 
-        const d = new Date(data);
-
-        if (isNaN(d.getTime())) return '—';
-
-        // REMOVE 3 HORAS
-        d.setHours(d.getHours() - 3);
+        const d = new Date(Date.UTC(
+            Number(ano),
+            Number(mes) - 1,
+            Number(dia),
+            Number(hora),
+            Number(minuto),
+            Number(segundo)
+        ));
 
         return new Intl.DateTimeFormat('pt-BR', {
             timeZone: 'America/Sao_Paulo',
@@ -483,6 +486,20 @@ async function verDetalhes(id) {
             second: '2-digit'
         }).format(d);
     }
+
+    const d = new Date(data);
+    if (isNaN(d.getTime())) return '—';
+
+    return new Intl.DateTimeFormat('pt-BR', {
+        timeZone: 'America/Sao_Paulo',
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+    }).format(d);
+}
 
     document.getElementById('detalheData').textContent = formatarBrasilia(chamado.data_hora);
     document.getElementById('detalheUltimaAtt').textContent = formatarBrasilia(chamado.atualizado_em);
