@@ -378,42 +378,89 @@ app.put("/api/chamados/:id", async (req, res) => {
   }
 
   try {
-    const agora = new Date().toLocaleString('pt-BR');
+    const agora = new Date().toLocaleString("pt-BR");
     let result;
-    if (feedback !== undefined && prazo_resolucao) {
-      result = await pool.query(`UPDATE chamados SET status = $1, feedback = $2, atualizado_em = $3, prazo_resolucao = $4 WHERE id = $5`, [status, feedback, agora, prazo_resolucao, id]);
-    } else if (feedback !== undefined) {
-      result = await pool.query(`UPDATE chamados SET status = $1, feedback = $2, atualizado_em = $3 WHERE id = $4`, [status, feedback, agora, id]);
-    } else if (prazo_resolucao) {
-      result = await pool.query(`UPDATE chamados SET status = $1, atualizado_em = $2, prazo_resolucao = $3 WHERE id = $4`, [status, agora, prazo_resolucao, id]);
-    } else {
-      result = await pool.query(`UPDATE chamados SET status = $1, atualizado_em = $2 WHERE id = $3`, [status, agora, id]);
-    }
-    if (result.rowCount === 0) return res.status(404).json({ sucesso: false, erro: "Chamado não encontrado." });
-    notificarClientes('status_chamado', { id: parseInt(id), status, feedback });
 
-    // Enviar email ao usuário quando chamado for resolvido
-    if (status === 'Resolvido') {
-      const chamadoResult = await pool.query(`SELECT * FROM chamados WHERE id = $1`, [id]);
-      const chamado = chamadoResult.rows[0];
-      if (chamado) {
-        let emailDestino = chamado.email || '';
-        // Se não há email no chamado, buscar do cadastro do usuário
-        if (!emailDestino && chamado.usuario_id) {
-          const userResult = await pool.query(`SELECT email FROM usuarios WHERE id = $1`, [chamado.usuario_id]);
-          const usuario = userResult.rows[0];
-          if (usuario) emailDestino = usuario.email || '';
+    if (feedback !== undefined && prazo_resolucao) {
+      result = await pool.query(
+        `UPDATE chamados 
+         SET status = $1, feedback = $2, atualizado_em = $3, prazo_resolucao = $4 
+         WHERE id = $5`,
+        [status, feedback, agora, prazo_resolucao, id]
+      );
+    } else if (feedback !== undefined) {
+      result = await pool.query(
+        `UPDATE chamados 
+         SET status = $1, feedback = $2, atualizado_em = $3 
+         WHERE id = $4`,
+        [status, feedback, agora, id]
+      );
+    } else if (prazo_resolucao) {
+      result = await pool.query(
+        `UPDATE chamados 
+         SET status = $1, atualizado_em = $2, prazo_resolucao = $3 
+         WHERE id = $4`,
+        [status, agora, prazo_resolucao, id]
+      );
+    } else {
+      result = await pool.query(
+        `UPDATE chamados 
+         SET status = $1, atualizado_em = $2 
+         WHERE id = $3`,
+        [status, agora, id]
+      );
+    }
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ sucesso: false, erro: "Chamado não encontrado." });
+    }
+
+    notificarClientes("status_chamado", {
+      id: parseInt(id),
+      status,
+      feedback
+    });
+
+    const chamadoResult = await pool.query(`SELECT * FROM chamados WHERE id = $1`, [id]);
+    const chamado = chamadoResult.rows[0];
+
+    if (chamado) {
+      let emailDestino = chamado.email || "";
+
+      if (!emailDestino && chamado.usuario_id) {
+        const userResult = await pool.query(
+          `SELECT email FROM usuarios WHERE id = $1`,
+          [chamado.usuario_id]
+        );
+        const usuario = userResult.rows[0];
+        if (usuario) emailDestino = usuario.email || "";
+      }
+
+      if (emailDestino) {
+        if (status === "Resolvido") {
+          await enviarEmailResolucao(emailDestino, chamado, feedback || chamado.feedback);
         }
-        if (emailDestino) {
-          enviarEmailResolucao(emailDestino, chamado, feedback || chamado.feedback);
+
+        if (status === "Em Andamento") {
+          await enviarEmailAndamento(
+            emailDestino,
+            chamado,
+            feedback || "Seu chamado foi recebido e está em andamento."
+          );
         }
       }
     }
 
-    res.json({ sucesso: true, mensagem: "Chamado atualizado com sucesso!" });
-  } catch (err) {
-    console.error("Erro ao atualizar chamado:", err);
-    return res.status(500).json({ sucesso: false, erro: "Erro ao atualizar chamado." });
+    return res.json({
+      sucesso: true,
+      mensagem: "Chamado atualizado com sucesso."
+    });
+  } catch (error) {
+    console.error("Erro ao atualizar chamado:", error);
+    return res.status(500).json({
+      sucesso: false,
+      erro: "Erro ao atualizar chamado."
+    });
   }
 });
 
