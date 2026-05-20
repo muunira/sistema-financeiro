@@ -573,7 +573,6 @@ function formatarBrasilia(data) {
     }
 
     document.getElementById('modalDetalhes').classList.add('active');
-}
 
 // ================================================================
 // FEEDBACK AO RESOLVER
