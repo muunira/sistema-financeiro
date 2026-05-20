@@ -256,7 +256,7 @@ function renderizarLinha(chamado, corpo) {
         tr.className = 'prioridade-critica';
     }
     const displayId = chamado.numero || chamado.id;
-const displayData = formatarBrasilia(chamado.data_hora || chamado.dataHora);
+    const displayData = chamado.data_hora || chamado.dataHora;
     tr.innerHTML = `
         <td><strong>#${displayId}</strong></td>
         <td>${getBadgePrioridade(chamado.prioridade)}</td>
