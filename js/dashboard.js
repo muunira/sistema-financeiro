@@ -479,7 +479,37 @@ async function verDetalhes(id) {
         minute: '2-digit',
         second: '2-digit'
     }).format(d);
-}   
+}
+
+    function formatarBrasilia(data) {
+    if (!data) return '—';
+
+    let valor = data;
+
+    // Se vier no formato "YYYY-MM-DD HH:mm:ss", troca espaço por T
+    if (typeof valor === 'string' && valor.includes(' ') && !valor.includes('T')) {
+        valor = valor.replace(' ', 'T');
+    }
+
+    // Se não vier com timezone, assume UTC
+    if (typeof valor === 'string' && !valor.includes('Z') && !valor.match(/[+-]\d{2}:\d{2}$/)) {
+        valor += 'Z';
+    }
+
+    const d = new Date(valor);
+
+    if (isNaN(d.getTime())) return '—';
+
+    return new Intl.DateTimeFormat('pt-BR', {
+        timeZone: 'America/Sao_Paulo',
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+    }).format(d);
+}
 
     document.getElementById('detalheData').textContent = formatarBrasilia(chamado.data_hora);
     document.getElementById('detalheUltimaAtt').textContent = formatarBrasilia(chamado.atualizado_em);
