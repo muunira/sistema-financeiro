@@ -465,25 +465,43 @@ async function verDetalhes(id) {
 function formatarBrasilia(data) {
     if (!data) return '—';
 
-    let valor = data;
+    try {
 
-    // Formato BR: 20/05/2026, 16:10:41
-    if (typeof valor === 'string' && valor.includes('/')) {
+        // Se vier no formato brasileiro
+        if (typeof data === 'string' && data.includes('/')) {
 
-        const [dataParte, horaParte] = valor.split(', ');
+            const partes = data.split(' ');
 
-        const [dia, mes, ano] = dataParte.split('/');
-        const [hora, minuto, segundo] = horaParte.split(':');
+            const dataParte = partes[0].replace(',', '');
+            const horaParte = partes[1];
 
-        // cria em UTC
-        const d = new Date(Date.UTC(
-            ano,
-            mes - 1,
-            dia,
-            hora,
-            minuto,
-            segundo
-        ));
+            const [dia, mes, ano] = dataParte.split('/');
+            const [hora, minuto, segundo = '00'] = horaParte.split(':');
+
+            const d = new Date(Date.UTC(
+                Number(ano),
+                Number(mes) - 1,
+                Number(dia),
+                Number(hora),
+                Number(minuto),
+                Number(segundo)
+            ));
+
+            return new Intl.DateTimeFormat('pt-BR', {
+                timeZone: 'America/Sao_Paulo',
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            }).format(d);
+        }
+
+        // Outros formatos
+        const d = new Date(data);
+
+        if (isNaN(d.getTime())) return '—';
 
         return new Intl.DateTimeFormat('pt-BR', {
             timeZone: 'America/Sao_Paulo',
@@ -494,7 +512,11 @@ function formatarBrasilia(data) {
             minute: '2-digit',
             second: '2-digit'
         }).format(d);
+
+    } catch {
+        return '—';
     }
+}
 
     const d = new Date(valor);
 
