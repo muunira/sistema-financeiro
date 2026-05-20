@@ -459,21 +459,27 @@ async function verDetalhes(id) {
     document.getElementById('detalheProblema').textContent = chamado.problema;
     document.getElementById('detalhePrioridade').innerHTML = getBadgePrioridade(chamado.prioridade);
     function formatarBrasilia(data) {
-        if (!data) return '—';
+    if (!data) return '—';
 
-        const d = new Date(data);
-        if (isNaN(d.getTime())) return data;
-
-        return new Intl.DateTimeFormat('pt-BR', {
-            timeZone: 'America/Sao_Paulo',
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit'
-        }).format(d);
+    // Se vier no formato BR: 19/05/2026, 15:10:37
+    if (typeof data === 'string' && data.includes('/')) {
+        return data;
     }
+
+    const d = new Date(data);
+
+    if (isNaN(d.getTime())) return '—';
+
+    return new Intl.DateTimeFormat('pt-BR', {
+        timeZone: 'America/Sao_Paulo',
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+    }).format(d);
+}   
 
     document.getElementById('detalheData').textContent = formatarBrasilia(chamado.data_hora);
     document.getElementById('detalheUltimaAtt').textContent = formatarBrasilia(chamado.atualizado_em);
