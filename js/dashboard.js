@@ -684,11 +684,35 @@ async function atualizarContadorLixeira() {
 
 function toggleLixeira() {
     const section = document.getElementById('lixeiraSection');
-    if (!section) return;
+    const btn = document.getElementById('btnLixeira');
+
+    if (!section) {
+        console.error('Lixeira section não encontrada');
+        return;
+    }
+
     lixeiraAberta = !lixeiraAberta;
-    section.style.display = lixeiraAberta ? 'block' : 'none';
-    if (lixeiraAberta) carregarLixeira();
+
+    if (lixeiraAberta) {
+        section.style.display = 'block';
+
+        if (btn) {
+            btn.innerHTML = '❌ Fechar Lixeira';
+        }
+
+        carregarLixeira();
+
+    } else {
+        section.style.display = 'none';
+
+        if (btn) {
+            btn.innerHTML = '🗑 Lixeira (<span id="lixeiraBadge">0</span>)';
+        }
+    }
 }
+
+// GARANTE QUE O HTML CONSIGA CHAMAR
+window.toggleLixeira = toggleLixeira;
 
 async function carregarLixeira() {
     try {
