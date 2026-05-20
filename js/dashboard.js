@@ -458,15 +458,10 @@ async function verDetalhes(id) {
     document.getElementById('detalheSetor').textContent = chamado.setor;
     document.getElementById('detalheProblema').textContent = chamado.problema;
     document.getElementById('detalhePrioridade').innerHTML = getBadgePrioridade(chamado.prioridade);
-    function formatarBrasilia(data) {
+    function formatarDataBR(data) {
     if (!data) return '—';
 
-    const texto = String(data).trim();
-
-    // Se já vier no formato BR, mostra como está
-    if (texto.includes('/')) return texto;
-
-    const d = new Date(texto);
+    const d = new Date(data);
     if (isNaN(d.getTime())) return '—';
 
     return new Intl.DateTimeFormat('pt-BR', {
@@ -480,8 +475,28 @@ async function verDetalhes(id) {
     }).format(d);
 }
 
-    document.getElementById('detalheData').textContent = formatarBrasilia(chamado.data_hora);
-    document.getElementById('detalheUltimaAtt').textContent = formatarBrasilia(chamado.atualizado_em);
+function formatarAbertura(data) {
+    if (!data) return '—';
+
+    const d = new Date(data);
+    if (isNaN(d.getTime())) return '—';
+
+    // só a abertura recebe ajuste de 3 horas
+    d.setHours(d.getHours() + 3);
+
+    return new Intl.DateTimeFormat('pt-BR', {
+        timeZone: 'America/Sao_Paulo',
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+    }).format(d);
+}
+
+    document.getElementById('detalheData').textContent = formatarAbertura(chamado.data_hora);
+    document.getElementById('detalheUltimaAtt').textContent = formatarDataBR(chamado.atualizado_em);
     document.getElementById('detalheStatus').innerHTML = getBadgeStatus(chamado.status);
     document.getElementById('detalheDescricao').textContent = chamado.descricao;
 
@@ -667,7 +682,7 @@ async function carregarLixeira() {
         corpo.innerHTML = '';
 
         chamados.forEach(chamado => {
-            const displayId = chamado.numero || chamado.id;
+            const displayData = formatarAbertura(chamado.data_hora || chamado.dataHora);
             const excData = new Date(chamado.excluido_em);
             const expiraData = new Date(excData.getTime() + 30 * 24 * 60 * 60 * 1000);
             const diasRestantes = Math.max(0, Math.ceil((expiraData - Date.now()) / (24 * 60 * 60 * 1000)));
