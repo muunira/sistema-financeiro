@@ -285,6 +285,10 @@
                     <strong>Última Atualização:</strong>
                     <span id="detalheUltimaAtt"></span>
                 </div>
+                <div class="detalhe-item" id="detalhePrazoSection">
+                    <strong>Prazo de Resolução:</strong>
+                    <span id="detalhePrazo" style="color:var(--warning); font-weight:600;"></span>
+                </div>
                 <div class="detalhe-item full">
                     <strong>Descrição:</strong>
                     <p id="detalheDescricao"></p>
@@ -318,6 +322,12 @@
             <h3 class="modal-confirmacao-titulo">Confirmar Ação</h3>
             <p class="modal-confirmacao-mensagem"></p>
             <p class="modal-confirmacao-sub"></p>
+            <div id="prazoContainer" style="display:none; margin: 16px 0;">
+                <label for="prazoResolucao" style="font-size:0.85rem; font-weight:600; color:var(--text); display:block; margin-bottom:6px;">
+                    📅 Prazo de Resolução:
+                </label>
+                <input type="datetime-local" id="prazoResolucao" style="width:100%; padding:10px 12px; border:2px solid var(--border); border-radius:8px; font-size:0.9rem; font-family:inherit;">
+            </div>
             <div class="modal-confirmacao-btns">
                 <button class="btn-modal btn-cancelar-status" onclick="fecharModalConfirmacao()">
                     Cancelar

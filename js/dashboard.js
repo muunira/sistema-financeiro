@@ -335,6 +335,17 @@ async function confirmarMudancaStatus(id, novoStatus) {
     modal.querySelector('.modal-confirmacao-mensagem').innerHTML = config.mensagem.replace('ID', id);
     modal.querySelector('.modal-confirmacao-sub').textContent = config.sub;
 
+    // Mostrar campo de prazo apenas ao iniciar atendimento
+    const prazoContainer = document.getElementById('prazoContainer');
+    const prazoInput = document.getElementById('prazoResolucao');
+    if (novoStatus === 'Em Andamento' && chamado.status === 'Aberto') {
+        prazoContainer.style.display = 'block';
+        prazoInput.value = '';
+    } else {
+        prazoContainer.style.display = 'none';
+        prazoInput.value = '';
+    }
+
     const btnConfirmar = modal.querySelector('.btn-confirmar-status');
     btnConfirmar.textContent = config.txtBtn;
     btnConfirmar.style.background = config.corBtn;
@@ -346,7 +357,9 @@ async function confirmarMudancaStatus(id, novoStatus) {
 function confirmarAcaoStatus() {
     if (!acaoPendente) return;
     const { id, novoStatus } = acaoPendente;
-    mudarStatus(id, novoStatus);
+    const prazoInput = document.getElementById('prazoResolucao');
+    const prazo = prazoInput ? prazoInput.value : '';
+    mudarStatus(id, novoStatus, prazo);
     fecharModalConfirmacao();
     const msgs = {
         'Aberto': '↩ Chamado revertido para Aberto.',
@@ -362,7 +375,7 @@ function fecharModalConfirmacao() {
     acaoPendente = null;
 }
 
-async function mudarStatus(id, novoStatus) {
+async function mudarStatus(id, novoStatus, prazo) {
     try {
         const chamados = await getChamados();
         const chamado = chamados.find(c => c.numero === id || c.id === id);
@@ -370,12 +383,14 @@ async function mudarStatus(id, novoStatus) {
             mostrarToast('Chamado não encontrado.', 'error');
             return;
         }
+        const body = { status: novoStatus };
+        if (prazo) body.prazo_resolucao = prazo;
         const response = await fetch(`/api/chamados/${chamado.id}`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ status: novoStatus })
+            body: JSON.stringify(body)
         });
         const data = await response.json();
         if (data.sucesso) {
@@ -447,7 +462,24 @@ async function verDetalhes(id) {
     document.getElementById('detalheStatus').innerHTML = getBadgeStatus(chamado.status);
     document.getElementById('detalheDescricao').textContent = chamado.descricao;
     const ultimaAtt = document.getElementById('detalheUltimaAtt');
-    if (ultimaAtt) ultimaAtt.textContent = chamado.atualizado_em || '—';
+
+    if (ultimaAtt) {
+        ultimaAtt.textContent = chamado.atualizado_em
+            ? new Date(chamado.atualizado_em).toLocaleString('pt-BR', {
+                timeZone: 'America/Sao_Paulo'
+            })
+            : '—';
+    }
+
+    const prazoSection = document.getElementById('detalhePrazoSection');
+    const prazoEl = document.getElementById('detalhePrazo');
+    if (chamado.prazo_resolucao) {
+        prazoSection.style.display = 'block';
+        const d = new Date(chamado.prazo_resolucao);
+        prazoEl.textContent = d.toLocaleString('pt-BR');
+    } else {
+        prazoSection.style.display = 'none';
+    }
 
     const feedbackSection = document.getElementById('detalheFeedbackSection');
     const feedbackEl = document.getElementById('detalheFeedback');
