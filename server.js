@@ -19,7 +19,7 @@ async function enviarEmailAndamento(emailDestino, chamado, observacao) {
       subject: `Chamado #${chamado.numero} Em Andamento`,
       html: `
         <div style="font-family:'Inter',Arial,sans-serif; max-width:600px; margin:0 auto; padding:20px;">
-          
+
           <div style="background:#2563eb; color:white; padding:20px; border-radius:12px 12px 0 0; text-align:center;">
             <h1 style="margin:0; font-size:1.3rem;">Chamado Em Andamento</h1>
             <p style="margin:5px 0 0; opacity:0.9;">Suporte TI - Porto Velho</p>
@@ -28,35 +28,74 @@ async function enviarEmailAndamento(emailDestino, chamado, observacao) {
           <div style="background:#f9fafb; padding:24px; border:1px solid #e5e7eb; border-top:none; border-radius:0 0 12px 12px;">
 
             <p style="margin:0 0 16px; color:#374151;">
-              Olá! Seu chamado está sendo analisado pela equipe de TI.
+              Olá! Seu chamado está sendo atendido pela equipe de TI.
             </p>
 
             <table style="width:100%; border-collapse:collapse; margin-bottom:16px;">
+
               <tr>
-                <td style="padding:8px 0; color:#6b7280; font-size:0.9rem;">Número:</td>
-                <td style="padding:8px 0; font-weight:600;">#${chamado.numero}</td>
+                <td style="padding:8px 0; color:#6b7280; font-size:0.9rem;">
+                  Número:
+                </td>
+
+                <td style="padding:8px 0; font-weight:600;">
+                  #${chamado.numero}
+                </td>
               </tr>
 
               <tr>
-                <td style="padding:8px 0; color:#6b7280; font-size:0.9rem;">Problema:</td>
-                <td style="padding:8px 0;">${chamado.problema}</td>
+                <td style="padding:8px 0; color:#6b7280; font-size:0.9rem;">
+                  Problema:
+                </td>
+
+                <td style="padding:8px 0;">
+                  ${chamado.problema}
+                </td>
               </tr>
 
               <tr>
-                <td style="padding:8px 0; color:#6b7280; font-size:0.9rem;">Setor:</td>
-                <td style="padding:8px 0;">${chamado.setor}</td>
+                <td style="padding:8px 0; color:#6b7280; font-size:0.9rem;">
+                  Setor:
+                </td>
+
+                <td style="padding:8px 0;">
+                  ${chamado.setor}
+                </td>
               </tr>
 
               <tr>
-                <td style="padding:8px 0; color:#6b7280; font-size:0.9rem;">Status:</td>
+                <td style="padding:8px 0; color:#6b7280; font-size:0.9rem;">
+                  Status:
+                </td>
+
                 <td style="padding:8px 0; color:#2563eb; font-weight:600;">
                   Em Andamento
                 </td>
               </tr>
+
+              ${
+                chamado.prazo_resolucao
+                  ? `
+                <tr>
+                  <td style="padding:8px 0; color:#6b7280; font-size:0.9rem;">
+                    Prazo Estimado:
+                  </td>
+
+                  <td style="padding:8px 0; color:#dc2626; font-weight:600;">
+                    ${chamado.prazo_resolucao}
+                  </td>
+                </tr>
+              `
+                  : ""
+              }
+
             </table>
 
-            ${observacao ? `
+            ${
+              observacao
+                ? `
               <div style="background:white; border-left:4px solid #2563eb; padding:12px 16px; border-radius:0 8px 8px 0; margin-top:12px;">
+
                 <strong style="color:#2563eb; font-size:0.85rem;">
                   Atualização da Equipe:
                 </strong>
@@ -64,8 +103,11 @@ async function enviarEmailAndamento(emailDestino, chamado, observacao) {
                 <p style="margin:8px 0 0; color:#374151;">
                   ${observacao}
                 </p>
+
               </div>
-            ` : ''}
+            `
+                : ""
+            }
 
             <p style="margin:20px 0 0; font-size:0.85rem; color:#9ca3af; text-align:center;">
               Este é um e-mail automático. Não responda.
