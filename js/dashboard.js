@@ -485,15 +485,6 @@ async function verDetalhes(id) {
     document.getElementById('detalheUltimaAtt').textContent = formatarBrasilia(chamado.atualizado_em);
     document.getElementById('detalheStatus').innerHTML = getBadgeStatus(chamado.status);
     document.getElementById('detalheDescricao').textContent = chamado.descricao;
-    const ultimaAtt = document.getElementById('detalheUltimaAtt');
-
-    if (ultimaAtt) {
-        ultimaAtt.textContent = chamado.atualizado_em
-            ? new Date(chamado.atualizado_em).toLocaleString('pt-BR', {
-                timeZone: 'America/Sao_Paulo'
-            })
-            : '—';
-    }
 
     const prazoSection = document.getElementById('detalhePrazoSection');
     const prazoEl = document.getElementById('detalhePrazo');
