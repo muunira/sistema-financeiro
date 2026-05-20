@@ -256,7 +256,7 @@ function renderizarLinha(chamado, corpo) {
         tr.className = 'prioridade-critica';
     }
     const displayId = chamado.numero || chamado.id;
-    const displayData = formatarBrasilia(chamado.data_hora || chamado.dataHora);
+const displayData = formatarBrasilia(chamado.data_hora || chamado.dataHora);
     tr.innerHTML = `
         <td><strong>#${displayId}</strong></td>
         <td>${getBadgePrioridade(chamado.prioridade)}</td>
@@ -461,31 +461,31 @@ async function verDetalhes(id) {
     function formatarBrasilia(data) {
     if (!data) return '—';
 
-    let d;
-
-    // Se vier em formato BR, converte de forma segura
+    // Se já vier no formato BR, tenta interpretar e converter certo
     if (typeof data === 'string' && data.includes('/')) {
-        const [dataParte, horaParte = '00:00:00'] = data.replace(',', '').split(' ');
+        const [dataParte, horaParte] = data.replace(',', '').split(' ');
         const [dia, mes, ano] = dataParte.split('/');
-        const [hora = '00', minuto = '00', segundo = '00'] = horaParte.split(':');
+        const [hora = '0', minuto = '0', segundo = '0'] = (horaParte || '00:00:00').split(':');
 
-        d = new Date(`${ano}-${mes}-${dia}T${hora}:${minuto}:${segundo}Z`);
-    } else {
-        d = new Date(data);
+        const d = new Date(Date.UTC(
+            Number(ano),
+            Number(mes) - 1,
+            Number(dia),
+            Number(hora),
+            Number(minuto),
+            Number(segundo)
+        ));
+
+        return new Intl.DateTimeFormat('pt-BR', {
+            timeZone: 'America/Sao_Paulo',
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        }).format(d);
     }
-
-    if (isNaN(d.getTime())) return '—';
-
-    return new Intl.DateTimeFormat('pt-BR', {
-        timeZone: 'America/Sao_Paulo',
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit'
-    }).format(d);
-}
 
     const d = new Date(data);
     if (isNaN(d.getTime())) return '—';
@@ -526,6 +526,7 @@ async function verDetalhes(id) {
     }
 
     document.getElementById('modalDetalhes').classList.add('active');
+}
 
 // ================================================================
 // FEEDBACK AO RESOLVER
