@@ -501,8 +501,53 @@ async function verDetalhes(id) {
     }).format(d);
 }
 
-    document.getElementById('detalheData').textContent = formatarBrasilia(chamado.data_hora);
-    document.getElementById('detalheUltimaAtt').textContent = formatarBrasilia(chamado.atualizado_em);
+function formatarBrasiliaAtualizacao(data) {
+    if (!data) return '—';
+
+    const texto = String(data).trim();
+    const d = new Date(texto);
+
+    if (isNaN(d.getTime())) return '—';
+
+    return new Intl.DateTimeFormat('pt-BR', {
+        timeZone: 'America/Sao_Paulo',
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+    }).format(d);
+}
+
+function formatarBrasiliaAbertura(data) {
+    if (!data) return '—';
+
+    const texto = String(data).trim();
+
+    // Se vier em BR, mantém sem mexer
+    if (/^\d{2}\/\d{2}\/\d{4}/.test(texto)) return texto;
+
+    // Se vier sem timezone, assume UTC
+    const normalizado = texto.includes('T') ? texto : texto.replace(' ', 'T');
+    const comTimezone = /Z|[+-]\d{2}:\d{2}$/.test(normalizado) ? normalizado : `${normalizado}Z`;
+
+    const d = new Date(comTimezone);
+    if (isNaN(d.getTime())) return '—';
+
+    return new Intl.DateTimeFormat('pt-BR', {
+        timeZone: 'America/Sao_Paulo',
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+    }).format(d);
+}
+
+    document.getElementById('detalheData').textContent = formatarBrasiliaAbertura(chamado.data_hora);
+    document.getElementById('detalheUltimaAtt').textContent = formatarBrasiliaAtualizacao(chamado.atualizado_em);
     document.getElementById('detalheStatus').innerHTML = getBadgeStatus(chamado.status);
     document.getElementById('detalheDescricao').textContent = chamado.descricao;
 
