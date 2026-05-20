@@ -682,7 +682,7 @@ async function carregarLixeira() {
         corpo.innerHTML = '';
 
         chamados.forEach(chamado => {
-            const displayData = formatarAbertura(chamado.data_hora || chamado.dataHora);
+            const displayId = chamado.numero || chamado.id;
             const excData = new Date(chamado.excluido_em);
             const expiraData = new Date(excData.getTime() + 30 * 24 * 60 * 60 * 1000);
             const diasRestantes = Math.max(0, Math.ceil((expiraData - Date.now()) / (24 * 60 * 60 * 1000)));
