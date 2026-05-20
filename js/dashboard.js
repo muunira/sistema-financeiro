@@ -462,9 +462,54 @@ async function verDetalhes(id) {
     if (!data) return '—';
 
     // Se vier no formato BR: 19/05/2026, 15:10:37
-    if (typeof data === 'string' && data.includes('/')) {
-        return data;
+function formatarBrasilia(data) {
+    if (!data) return '—';
+
+    let valor = data;
+
+    // Formato BR: 20/05/2026, 16:10:41
+    if (typeof valor === 'string' && valor.includes('/')) {
+
+        const [dataParte, horaParte] = valor.split(', ');
+
+        const [dia, mes, ano] = dataParte.split('/');
+        const [hora, minuto, segundo] = horaParte.split(':');
+
+        // cria em UTC
+        const d = new Date(Date.UTC(
+            ano,
+            mes - 1,
+            dia,
+            hora,
+            minuto,
+            segundo
+        ));
+
+        return new Intl.DateTimeFormat('pt-BR', {
+            timeZone: 'America/Sao_Paulo',
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        }).format(d);
     }
+
+    const d = new Date(valor);
+
+    if (isNaN(d.getTime())) return '—';
+
+    return new Intl.DateTimeFormat('pt-BR', {
+        timeZone: 'America/Sao_Paulo',
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+    }).format(d);
+}
 
     const d = new Date(data);
 
