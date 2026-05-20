@@ -462,76 +462,9 @@ async function verDetalhes(id) {
     if (!data) return '—';
 
     // Se vier no formato BR: 19/05/2026, 15:10:37
-    function formatarBrasilia(data) {
-        if (!data) return '—';
-
-        try {
-
-            // Se vier no formato brasileiro
-            if (typeof data === 'string' && data.includes('/')) {
-
-                const partes = data.split(' ');
-
-                const dataParte = partes[0].replace(',', '');
-                const horaParte = partes[1];
-
-                const [dia, mes, ano] = dataParte.split('/');
-                const [hora, minuto, segundo = '00'] = horaParte.split(':');
-
-                const d = new Date(Date.UTC(
-                    Number(ano),
-                    Number(mes) - 1,
-                    Number(dia),
-                    Number(hora),
-                    Number(minuto),
-                    Number(segundo)
-                ));
-
-                return new Intl.DateTimeFormat('pt-BR', {
-                    timeZone: 'America/Sao_Paulo',
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    second: '2-digit'
-                }).format(d);
-            }
-
-            // Outros formatos
-            const d = new Date(data);
-
-            if (isNaN(d.getTime())) return '—';
-
-            return new Intl.DateTimeFormat('pt-BR', {
-                timeZone: 'America/Sao_Paulo',
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit'
-            }).format(d);
-
-        } catch {
-            return '—';
-        }
+    if (typeof data === 'string' && data.includes('/')) {
+        return data;
     }
-
-    const d = new Date(valor);
-
-    if (isNaN(d.getTime())) return '—';
-
-    return new Intl.DateTimeFormat('pt-BR', {
-        timeZone: 'America/Sao_Paulo',
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit'
-    }).format(d);
-}
 
     const d = new Date(data);
 
@@ -552,6 +485,15 @@ async function verDetalhes(id) {
     document.getElementById('detalheUltimaAtt').textContent = formatarBrasilia(chamado.atualizado_em);
     document.getElementById('detalheStatus').innerHTML = getBadgeStatus(chamado.status);
     document.getElementById('detalheDescricao').textContent = chamado.descricao;
+    const ultimaAtt = document.getElementById('detalheUltimaAtt');
+
+    if (ultimaAtt) {
+        ultimaAtt.textContent = chamado.atualizado_em
+            ? new Date(chamado.atualizado_em).toLocaleString('pt-BR', {
+                timeZone: 'America/Sao_Paulo'
+            })
+            : '—';
+    }
 
     const prazoSection = document.getElementById('detalhePrazoSection');
     const prazoEl = document.getElementById('detalhePrazo');
@@ -573,6 +515,7 @@ async function verDetalhes(id) {
     }
 
     document.getElementById('modalDetalhes').classList.add('active');
+}
 
 // ================================================================
 // FEEDBACK AO RESOLVER
