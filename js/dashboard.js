@@ -459,27 +459,30 @@ async function verDetalhes(id) {
     document.getElementById('detalheProblema').textContent = chamado.problema;
     document.getElementById('detalhePrioridade').innerHTML = getBadgePrioridade(chamado.prioridade);
     function formatarBrasilia(data) {
-    if (!data) return '—';
+        if (!data) return '—';
 
-    // Se vier no formato BR: 19/05/2026, 15:10:37
-    if (typeof data === 'string' && data.includes('/')) {
-        return data;
+        // Se vier no formato BR: 19/05/2026, 15:10:37
+        if (typeof data === 'string' && data.includes('/')) {
+            return data;
+        }
+
+        const d = new Date(data);
+
+        if (isNaN(d.getTime())) return '—';
+
+        // REMOVE 3 HORAS
+        d.setHours(d.getHours() - 3);
+
+        return new Intl.DateTimeFormat('pt-BR', {
+            timeZone: 'America/Sao_Paulo',
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        }).format(d);
     }
-
-    const d = new Date(data);
-
-    if (isNaN(d.getTime())) return '—';
-
-    return new Intl.DateTimeFormat('pt-BR', {
-        timeZone: 'America/Sao_Paulo',
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit'
-    }).format(d);
-}   
 
     document.getElementById('detalheData').textContent = formatarBrasilia(chamado.data_hora);
     document.getElementById('detalheUltimaAtt').textContent = formatarBrasilia(chamado.atualizado_em);
