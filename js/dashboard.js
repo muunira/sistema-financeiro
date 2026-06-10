@@ -563,6 +563,21 @@ function formatarBrasiliaAbertura(data) {
     document.getElementById('modalDetalhes').classList.add('active');
 }
 
+function ampliarImagem() {
+    const imagem = document.getElementById('detalheImagem');
+    const modal = document.getElementById('modalImagemAmpliada');
+    const imagemAmpliada = document.getElementById('imagemAmpliada');
+    
+    if (imagem && imagem.src) {
+        imagemAmpliada.src = imagem.src;
+        modal.classList.add('active');
+    }
+}
+
+function fecharImagemAmpliada() {
+    document.getElementById('modalImagemAmpliada').classList.remove('active');
+}
+
 // ================================================================
 // FEEDBACK AO RESOLVER
 // ================================================================

@@ -385,8 +385,8 @@ function arquivoParaBase64(arquivo) {
                 
                 ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
                 
-                // Comprimir com qualidade 0.7
-                const base64 = canvas.toDataURL('image/jpeg', 0.7);
+                // Comprimir com qualidade 0.9
+                const base64 = canvas.toDataURL('image/jpeg', 0.9);
                 resolve(base64);
             };
             img.onerror = reject;
