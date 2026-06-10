@@ -277,6 +277,7 @@ async function inicializarBanco() {
     await pool.query(`ALTER TABLE chamados ADD COLUMN IF NOT EXISTS usuario_id INTEGER DEFAULT NULL`);
     await pool.query(`ALTER TABLE chamados ADD COLUMN IF NOT EXISTS feedback TEXT DEFAULT NULL`);
     await pool.query(`ALTER TABLE chamados ADD COLUMN IF NOT EXISTS email TEXT DEFAULT ''`);
+    await pool.query(`ALTER TABLE chamados ADD COLUMN IF NOT EXISTS imagem TEXT DEFAULT NULL`);
 
     // Corrigir perfis antigos (coordenador, tecnico, analista, gustavo → diretor)
     await pool.query(`UPDATE usuarios SET perfil = 'diretor' WHERE perfil IN ('coordenador', 'gustavo')`);
