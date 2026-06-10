@@ -76,7 +76,8 @@ async function enviarEmailAndamento(emailDestino, chamado, observacao) {
         from: process.env.SMTP_FROM || process.env.SMTP_USER,
         to: emailDestino,
         subject: `Chamado #${chamado.numero} Em Andamento`,
-        html: htmlContent
+        html: htmlContent,
+        replyTo: 'nao-responda@suporte-ti.com'
       });
       console.log(`[EMAIL] SUCESSO: Email de andamento enviado via SMTP para ${emailDestino}`);
       return;
@@ -137,7 +138,8 @@ async function enviarEmailResolucao(emailDestino, chamado, feedback) {
         from: process.env.SMTP_FROM || process.env.SMTP_USER,
         to: emailDestino,
         subject: `Chamado #${chamado.numero} Resolvido`,
-        html: htmlContent
+        html: htmlContent,
+        replyTo: 'nao-responda@suporte-ti.com'
       });
       console.log(`Email de resolução enviado via SMTP para ${emailDestino}`);
       return;
