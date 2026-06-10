@@ -181,8 +181,8 @@ pool.connect()
   })
   .catch(err => console.error("Erro ao conectar ao banco:", err));
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(express.static(__dirname));
 
 // SSE - Server-Sent Events para tempo real
