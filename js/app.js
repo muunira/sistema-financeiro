@@ -377,16 +377,16 @@ function arquivoParaBase64(arquivo) {
                 const canvas = document.createElement('canvas');
                 const ctx = canvas.getContext('2d');
                 
-                // Redimensionar se for muito grande (max 800px de largura)
-                const maxWidth = 800;
+                // Redimensionar se for muito grande (max 1200px de largura)
+                const maxWidth = 1200;
                 const scale = Math.min(1, maxWidth / img.width);
                 canvas.width = img.width * scale;
                 canvas.height = img.height * scale;
                 
                 ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
                 
-                // Comprimir com qualidade 0.9
-                const base64 = canvas.toDataURL('image/jpeg', 0.9);
+                // Comprimir com qualidade máxima (1.0)
+                const base64 = canvas.toDataURL('image/jpeg', 1.0);
                 resolve(base64);
             };
             img.onerror = reject;
