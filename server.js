@@ -12,6 +12,11 @@ const resend = process.env.RESEND_API_KEY && Resend ? new Resend(process.env.RES
 
 // Configuração do Nodemailer com SMTP
 let smtpTransporter = null;
+console.log("Verificando configuração SMTP...");
+console.log("SMTP_HOST:", process.env.SMTP_HOST ? "Configurado" : "NÃO configurado");
+console.log("SMTP_USER:", process.env.SMTP_USER ? "Configurado" : "NÃO configurado");
+console.log("SMTP_PASS:", process.env.SMTP_PASS ? "Configurado" : "NÃO configurado");
+
 if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
   smtpTransporter = nodemailer.createTransport({
     host: process.env.SMTP_HOST,
@@ -23,10 +28,24 @@ if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
     }
   });
   console.log("SMTP configurado com sucesso");
+  console.log("Host:", process.env.SMTP_HOST);
+  console.log("Port:", process.env.SMTP_PORT || 587);
+  console.log("User:", process.env.SMTP_USER);
+} else {
+  console.log("SMTP NÃO configurado - variáveis de ambiente ausentes");
 }
 
 async function enviarEmailAndamento(emailDestino, chamado, observacao) {
-  if (!emailDestino) return;
+  console.log("[EMAIL] Tentando enviar email de andamento");
+  console.log("[EMAIL] Destino:", emailDestino);
+  console.log("[EMAIL] Chamado #:", chamado.numero);
+  console.log("[EMAIL] SMTP Transporter:", smtpTransporter ? "Configurado" : "NÃO configurado");
+  console.log("[EMAIL] Resend:", resend ? "Configurado" : "NÃO configurado");
+  
+  if (!emailDestino) {
+    console.log("[EMAIL] ERRO: Email destino vazio");
+    return;
+  }
 
   const htmlContent = `
     <div style="font-family:'Inter',Arial,sans-serif; max-width:600px; margin:0 auto; padding:20px;">
@@ -51,6 +70,7 @@ async function enviarEmailAndamento(emailDestino, chamado, observacao) {
 
   // Tenta SMTP primeiro
   if (smtpTransporter) {
+    console.log("[EMAIL] Tentando enviar via SMTP...");
     try {
       await smtpTransporter.sendMail({
         from: process.env.SMTP_FROM || process.env.SMTP_USER,
@@ -58,15 +78,19 @@ async function enviarEmailAndamento(emailDestino, chamado, observacao) {
         subject: `Chamado #${chamado.numero} Em Andamento`,
         html: htmlContent
       });
-      console.log(`Email de andamento enviado via SMTP para ${emailDestino}`);
+      console.log(`[EMAIL] SUCESSO: Email de andamento enviado via SMTP para ${emailDestino}`);
       return;
     } catch (err) {
-      console.error("Erro ao enviar via SMTP:", err.message);
+      console.error("[EMAIL] ERRO SMTP:", err.message);
+      console.error("[EMAIL] Detalhes erro:", err);
     }
+  } else {
+    console.log("[EMAIL] SMTP não disponível, tentando Resend...");
   }
 
   // Fallback para Resend
   if (resend) {
+    console.log("[EMAIL] Tentando enviar via Resend...");
     try {
       await resend.emails.send({
         from: "Suporte TI - Porto Velho <onboarding@resend.dev>",
@@ -74,10 +98,12 @@ async function enviarEmailAndamento(emailDestino, chamado, observacao) {
         subject: `Chamado #${chamado.numero} Em Andamento`,
         html: htmlContent
       });
-      console.log(`Email de andamento enviado via Resend para ${emailDestino}`);
+      console.log(`[EMAIL] SUCESSO: Email de andamento enviado via Resend para ${emailDestino}`);
     } catch (err) {
-      console.error("Erro ao enviar via Resend:", err.message);
+      console.error("[EMAIL] ERRO Resend:", err.message);
     }
+  } else {
+    console.log("[EMAIL] Nenhum método de email disponível!");
   }
 }
 
