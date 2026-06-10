@@ -371,7 +371,27 @@ document.addEventListener('keydown', (e) => {
 function arquivoParaBase64(arquivo) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
+        reader.onload = () => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                // Redimensionar se for muito grande (max 800px de largura)
+                const maxWidth = 800;
+                const scale = Math.min(1, maxWidth / img.width);
+                canvas.width = img.width * scale;
+                canvas.height = img.height * scale;
+                
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                
+                // Comprimir com qualidade 0.7
+                const base64 = canvas.toDataURL('image/jpeg', 0.7);
+                resolve(base64);
+            };
+            img.onerror = reject;
+            img.src = reader.result;
+        };
         reader.onerror = reject;
         reader.readAsDataURL(arquivo);
     });
