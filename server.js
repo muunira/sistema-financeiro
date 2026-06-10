@@ -35,6 +35,20 @@ if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
   console.log("SMTP NÃO configurado - variáveis de ambiente ausentes");
 }
 
+function formatarData(data) {
+  if (!data) return '';
+  try {
+    const d = new Date(data);
+    if (isNaN(d.getTime())) return data;
+    const dia = String(d.getDate()).padStart(2, '0');
+    const mes = String(d.getMonth() + 1).padStart(2, '0');
+    const ano = d.getFullYear();
+    return `${dia}/${mes}/${ano}`;
+  } catch (e) {
+    return data;
+  }
+}
+
 async function enviarEmailAndamento(emailDestino, chamado, observacao) {
   console.log("[EMAIL] Tentando enviar email de andamento");
   console.log("[EMAIL] Destino:", emailDestino);
@@ -46,6 +60,8 @@ async function enviarEmailAndamento(emailDestino, chamado, observacao) {
     console.log("[EMAIL] ERRO: Email destino vazio");
     return;
   }
+
+  const prazoFormatado = formatarData(chamado.prazo_resolucao);
 
   const htmlContent = `
     <div style="font-family:'Inter',Arial,sans-serif; max-width:600px; margin:0 auto; padding:20px;">
@@ -60,7 +76,7 @@ async function enviarEmailAndamento(emailDestino, chamado, observacao) {
           <tr><td style="padding:8px 0; color:#6b7280; font-size:0.9rem;">Problema:</td><td style="padding:8px 0;">${chamado.problema}</td></tr>
           <tr><td style="padding:8px 0; color:#6b7280; font-size:0.9rem;">Setor:</td><td style="padding:8px 0;">${chamado.setor}</td></tr>
           <tr><td style="padding:8px 0; color:#6b7280; font-size:0.9rem;">Status:</td><td style="padding:8px 0; color:#2563eb; font-weight:600;">Em Andamento</td></tr>
-          ${chamado.prazo_resolucao ? `<tr><td style="padding:8px 0; color:#6b7280; font-size:0.9rem;">Prazo Estimado:</td><td style="padding:8px 0; color:#dc2626; font-weight:600;">${chamado.prazo_resolucao}</td></tr>` : ""}
+          ${prazoFormatado ? `<tr><td style="padding:8px 0; color:#6b7280; font-size:0.9rem;">Prazo Estimado:</td><td style="padding:8px 0; color:#dc2626; font-weight:600;">${prazoFormatado}</td></tr>` : ""}
         </table>
         ${observacao ? `<div style="background:white; border-left:4px solid #2563eb; padding:12px 16px; border-radius:0 8px 8px 0; margin-top:12px;"><strong style="color:#2563eb; font-size:0.85rem;">Atualização da Equipe:</strong><p style="margin:8px 0 0; color:#374151;">${observacao}</p></div>` : ""}
         <p style="margin:20px 0 0; font-size:0.85rem; color:#9ca3af; text-align:center;">Este é um e-mail automático. Não responda.</p>
