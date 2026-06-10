@@ -77,7 +77,16 @@ async function enviarEmailAndamento(emailDestino, chamado, observacao) {
         to: emailDestino,
         subject: `Chamado #${chamado.numero} Em Andamento`,
         html: htmlContent,
-        replyTo: 'nao-responda@suporte-ti.com'
+        replyTo: 'nao-responda@suporte-ti.com',
+        headers: {
+          'X-Priority': '3',
+          'X-MS-Priority': 'Normal',
+          'X-Mailer': 'Sistema Chamados TI',
+          'X-Auto-Response-Suppress': 'All',
+          'Precedence': 'bulk',
+          'List-Unsubscribe': '<mailto:nao-responda@suporte-ti.com>',
+          'Organization': 'Suporte TI - Porto Velho'
+        }
       });
       console.log(`[EMAIL] SUCESSO: Email de andamento enviado via SMTP para ${emailDestino}`);
       return;
@@ -139,7 +148,16 @@ async function enviarEmailResolucao(emailDestino, chamado, feedback) {
         to: emailDestino,
         subject: `Chamado #${chamado.numero} Resolvido`,
         html: htmlContent,
-        replyTo: 'nao-responda@suporte-ti.com'
+        replyTo: 'nao-responda@suporte-ti.com',
+        headers: {
+          'X-Priority': '3',
+          'X-MS-Priority': 'Normal',
+          'X-Mailer': 'Sistema Chamados TI',
+          'X-Auto-Response-Suppress': 'All',
+          'Precedence': 'bulk',
+          'List-Unsubscribe': '<mailto:nao-responda@suporte-ti.com>',
+          'Organization': 'Suporte TI - Porto Velho'
+        }
       });
       console.log(`Email de resolução enviado via SMTP para ${emailDestino}`);
       return;
