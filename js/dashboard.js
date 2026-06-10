@@ -551,6 +551,15 @@ function formatarBrasiliaAbertura(data) {
         feedbackSection.style.display = 'none';
     }
 
+    const imagemSection = document.getElementById('detalheImagemSection');
+    const imagemEl = document.getElementById('detalheImagem');
+    if (chamado.imagem) {
+        imagemSection.style.display = 'block';
+        imagemEl.src = chamado.imagem;
+    } else {
+        imagemSection.style.display = 'none';
+    }
+
     document.getElementById('modalDetalhes').classList.add('active');
 }
 
