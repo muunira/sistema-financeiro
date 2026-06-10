@@ -1,3 +1,6 @@
+// Variável global para armazenar a imagem em base64
+let imagemBase64 = null;
+
 document.addEventListener('DOMContentLoaded', () => {
     const sessao = Auth.verificarSessao();
     if (!sessao) {
@@ -20,6 +23,53 @@ document.addEventListener('DOMContentLoaded', () => {
     const setorInput = document.getElementById('setor');
     if (setorInput && sessao.setor) {
         setorInput.value = sessao.setor;
+    }
+
+    // Inicialização de imagem
+    const imagemContainer = document.getElementById('imagemContainer');
+    const imagemInput = document.getElementById('imagem');
+    const btnRemover = document.getElementById('removerImagem');
+
+    if (imagemContainer && imagemInput && btnRemover) {
+        // Clique no container abre o seletor de arquivo
+        imagemContainer.addEventListener('click', (e) => {
+            if (e.target !== btnRemover) {
+                imagemInput.click();
+            }
+        });
+
+        // Seleção de arquivo
+        imagemInput.addEventListener('change', async (e) => {
+            const arquivo = e.target.files[0];
+            if (arquivo) {
+                const base64 = await arquivoParaBase64(arquivo);
+                mostrarImagemPreview(base64);
+            }
+        });
+
+        // Ctrl+V para colar imagem
+        document.addEventListener('paste', async (e) => {
+            const items = e.clipboardData?.items;
+            if (!items) return;
+            
+            for (const item of items) {
+                if (item.type.startsWith('image/')) {
+                    e.preventDefault();
+                    const arquivo = item.getAsFile();
+                    if (arquivo) {
+                        const base64 = await arquivoParaBase64(arquivo);
+                        mostrarImagemPreview(base64);
+                    }
+                    break;
+                }
+            }
+        });
+
+        // Botão remover
+        btnRemover.addEventListener('click', (e) => {
+            e.stopPropagation();
+            limparImagem();
+        });
     }
 });
 
@@ -193,7 +243,8 @@ async function enviarChamado(e) {
         status: 'Aberto',
         data_hora: new Date().toLocaleString('pt-BR'),
         timestamp: Date.now(),
-        usuario_id: sessao ? sessao.id : null
+        usuario_id: sessao ? sessao.id : null,
+        imagem: imagemBase64
     };
 
     await salvarChamado(chamado);
@@ -201,6 +252,7 @@ async function enviarChamado(e) {
     document.getElementById('numeroChamado').textContent = `#${numero}`;
     document.getElementById('modalSucesso').classList.add('active');
     document.getElementById('formChamado').reset();
+    limparImagem();
     if (sessao && sessao.nome) document.getElementById('nome').value = sessao.nome;
     if (sessao && sessao.email) document.getElementById('emailChamado').value = sessao.email;
     if (sessao && sessao.setor) document.getElementById('setor').value = sessao.setor;
@@ -314,3 +366,41 @@ document.getElementById('modalSucesso').addEventListener('click', (e) => {
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') fecharModal();
 });
+
+// Funções para manipulação de imagem
+function arquivoParaBase64(arquivo) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(arquivo);
+    });
+}
+
+function mostrarImagemPreview(base64) {
+    const preview = document.getElementById('imagemPreview');
+    const placeholder = document.getElementById('imagemPlaceholder');
+    const btnRemover = document.getElementById('removerImagem');
+    
+    if (base64) {
+        preview.src = base64;
+        preview.style.display = 'block';
+        placeholder.style.display = 'none';
+        btnRemover.style.display = 'inline-block';
+        imagemBase64 = base64;
+    }
+}
+
+function limparImagem() {
+    const preview = document.getElementById('imagemPreview');
+    const placeholder = document.getElementById('imagemPlaceholder');
+    const btnRemover = document.getElementById('removerImagem');
+    const input = document.getElementById('imagem');
+    
+    preview.src = '';
+    preview.style.display = 'none';
+    placeholder.style.display = 'block';
+    btnRemover.style.display = 'none';
+    input.value = '';
+    imagemBase64 = null;
+}
