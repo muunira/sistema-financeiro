@@ -370,7 +370,7 @@ app.post("/api/registro", async (req, res) => {
 
 // Criar chamado
 app.post("/api/chamados", async (req, res) => {
-  const { numero, nome, email, setor, problema, prioridade, descricao, status, data_hora, timestamp, usuario_id } = req.body;
+  const { numero, nome, email, setor, problema, prioridade, descricao, status, data_hora, timestamp, usuario_id, imagem } = req.body;
 
   if (!numero || !nome || !problema || !prioridade || !descricao) {
     return res.status(400).json({ sucesso: false, erro: "Todos os campos são obrigatórios." });
@@ -385,12 +385,12 @@ app.post("/api/chamados", async (req, res) => {
     }
 
     const { rows } = await pool.query(
-      `INSERT INTO chamados (numero, nome, setor, problema, prioridade, descricao, status, data_hora, timestamp, usuario_id, email)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id`,
-      [numero, nome, setorFinal, problema, prioridade, descricao, status || 'Aberto', data_hora, timestamp, usuario_id || null, email || '']
+      `INSERT INTO chamados (numero, nome, setor, problema, prioridade, descricao, status, data_hora, timestamp, usuario_id, email, imagem)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING id`,
+      [numero, nome, setorFinal, problema, prioridade, descricao, status || 'Aberto', data_hora, timestamp, usuario_id || null, email || '', imagem || null]
     );
 
-    const novoChamado = { id: rows[0].id, numero, nome, setor: setorFinal, problema, prioridade, descricao, status: status || 'Aberto', data_hora, timestamp, usuario_id: usuario_id || null };
+    const novoChamado = { id: rows[0].id, numero, nome, setor: setorFinal, problema, prioridade, descricao, status: status || 'Aberto', data_hora, timestamp, usuario_id: usuario_id || null, imagem };
     notificarClientes('novo_chamado', novoChamado);
     res.json({ sucesso: true, mensagem: "Chamado criado com sucesso!", chamado: novoChamado });
   } catch (err) {
