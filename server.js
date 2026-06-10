@@ -346,11 +346,16 @@ app.post("/api/registro", async (req, res) => {
 app.post("/api/chamados", async (req, res) => {
   const { numero, nome, email, setor, problema, prioridade, descricao, status, data_hora, timestamp, usuario_id, imagem } = req.body;
 
-  if (!numero || !nome || !problema || !prioridade || !descricao) {
+  if (!nome || !problema || !prioridade || !descricao) {
     return res.status(400).json({ sucesso: false, erro: "Todos os campos são obrigatórios." });
   }
 
   try {
+    // Gerar número automaticamente no backend para evitar duplicação
+    const { rows: numeroRows } = await pool.query(`SELECT numero FROM chamados ORDER BY CAST(numero AS INTEGER) DESC LIMIT 1`);
+    const ultimoNumero = numeroRows.length > 0 ? parseInt(numeroRows[0].numero) : 0;
+    const novoNumero = String(ultimoNumero + 1).padStart(4, '0');
+
     // Se setor não veio preenchido, buscar do cadastro do usuário
     let setorFinal = setor || '';
     if (!setorFinal && usuario_id) {
@@ -361,10 +366,10 @@ app.post("/api/chamados", async (req, res) => {
     const { rows } = await pool.query(
       `INSERT INTO chamados (numero, nome, setor, problema, prioridade, descricao, status, data_hora, timestamp, usuario_id, email, imagem)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING id`,
-      [numero, nome, setorFinal, problema, prioridade, descricao, status || 'Aberto', data_hora, timestamp, usuario_id || null, email || '', imagem || null]
+      [novoNumero, nome, setorFinal, problema, prioridade, descricao, status || 'Aberto', data_hora, timestamp, usuario_id || null, email || '', imagem || null]
     );
 
-    const novoChamado = { id: rows[0].id, numero, nome, setor: setorFinal, problema, prioridade, descricao, status: status || 'Aberto', data_hora, timestamp, usuario_id: usuario_id || null, imagem };
+    const novoChamado = { id: rows[0].id, numero: novoNumero, nome, setor: setorFinal, problema, prioridade, descricao, status: status || 'Aberto', data_hora, timestamp, usuario_id: usuario_id || null, imagem };
     notificarClientes('novo_chamado', novoChamado);
     res.json({ sucesso: true, mensagem: "Chamado criado com sucesso!", chamado: novoChamado });
   } catch (err) {

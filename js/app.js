@@ -230,10 +230,7 @@ async function enviarChamado(e) {
         return;
     }
 
-    const numero = await gerarNumeroChamado();
-
     const chamado = {
-        numero: numero,
         nome: nome,
         email: emailChamado,
         setor: setor,
@@ -247,9 +244,11 @@ async function enviarChamado(e) {
         imagem: imagemBase64
     };
 
-    await salvarChamado(chamado);
+    const resultado = await salvarChamado(chamado);
 
-    document.getElementById('numeroChamado').textContent = `#${numero}`;
+    if (resultado && resultado.numero) {
+        document.getElementById('numeroChamado').textContent = `#${resultado.numero}`;
+    }
     document.getElementById('modalSucesso').classList.add('active');
     document.getElementById('formChamado').reset();
     limparImagem();
@@ -301,10 +300,13 @@ async function salvarChamado(chamado) {
         if (!data.sucesso) {
             console.error('Erro ao salvar chamado:', data.erro);
             alert('Erro ao salvar chamado: ' + data.erro);
+            return null;
         }
+        return data.chamado;
     } catch (error) {
         console.error('Erro ao salvar chamado:', error);
         alert('Erro ao salvar chamado. Tente novamente.');
+        return null;
     }
 }
 
