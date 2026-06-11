@@ -455,6 +455,7 @@ async function verDetalhes(id) {
     if (!chamado) return;
     document.getElementById('detalheNumero').textContent = `#${chamado.numero}`;
     document.getElementById('detalheNome').textContent = chamado.nome;
+    document.getElementById('detalheEmail').textContent = chamado.email || '—';
     document.getElementById('detalheSetor').textContent = chamado.setor;
     document.getElementById('detalheProblema').textContent = chamado.problema;
     document.getElementById('detalhePrioridade').innerHTML = getBadgePrioridade(chamado.prioridade);

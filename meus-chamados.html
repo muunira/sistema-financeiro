@@ -114,6 +114,10 @@
                     <span id="detalhePrioridade"></span>
                 </div>
                 <div class="detalhe-item">
+                    <strong>E-mail:</strong>
+                    <span id="detalheEmail"></span>
+                </div>
+                <div class="detalhe-item">
                     <strong>Setor:</strong>
                     <span id="detalheSetor"></span>
                 </div>
@@ -301,6 +305,7 @@
             document.getElementById('detalheNumero').textContent = `#${chamado.numero}`;
             document.getElementById('detalheProblema').textContent = chamado.problema;
             document.getElementById('detalhePrioridade').textContent = chamado.prioridade;
+            document.getElementById('detalheEmail').textContent = chamado.email || '—';
             document.getElementById('detalheSetor').textContent = chamado.setor;
             document.getElementById('detalheStatus').innerHTML = `<span class="badge-status ${{'Aberto':'aberto','Em Andamento':'andamento','Resolvido':'resolvido'}[chamado.status] || ''}">${chamado.status}</span>`;
             document.getElementById('detalheData').textContent = chamado.data_hora;
