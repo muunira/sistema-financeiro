@@ -102,12 +102,26 @@ async function criarUsuario(e) {
 
   // Usa um cliente isolado para não derrubar a sessão do admin
   const iso = createIsolatedClient();
-  const { error } = await iso.auth.signUp({
+  const { data, error } = await iso.auth.signUp({
     email,
     password: senha,
     options: { data: { nome, role, setor } },
   });
   if (error) return toast("Erro ao criar: " + error.message, "error");
+
+  // Garante que o perfil foi criado/atualizado com os dados corretos
+  const userId = data?.user?.id;
+  if (userId) {
+    const { error: e2 } = await supabase.from("profiles").upsert({
+      id: userId,
+      nome,
+      email,
+      role,
+      setor,
+      ativo: true,
+    }, { onConflict: "id" });
+    if (e2) console.error("Erro ao salvar perfil:", e2);
+  }
 
   toast(`Usuário ${nome} criado. Repasse a senha inicial.`);
   f.reset();
