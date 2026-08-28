@@ -2,7 +2,7 @@
 // Módulo ADMIN: gestão de usuários (criar, ativar/desativar, mudar papel)
 // =====================================================================
 import { supabase, createIsolatedClient, ROLE_LABELS, SETORES } from "./supabase.js";
-import { esc, fmtDate, toast, pageHeader } from "./ui.js";
+import { esc, fmtDate, toast, pageHeader, confirmDialog } from "./ui.js";
 
 let container, profile;
 
@@ -71,6 +71,8 @@ function draw(users) {
     s.addEventListener("change", () => mudarSetor(s.dataset.setor, s.value)));
   container.querySelectorAll("[data-toggle]").forEach((b) =>
     b.addEventListener("click", () => toggleAtivo(b.dataset.toggle, b.dataset.ativo === "true")));
+  container.querySelectorAll("[data-excluir]").forEach((b) =>
+    b.addEventListener("click", () => excluirUsuario(b.dataset.excluir, b.dataset.nome)));
 }
 
 function rowUser(u) {
@@ -82,7 +84,7 @@ function rowUser(u) {
     <td><select data-role="${u.id}" ${u.role === "admin" ? "disabled" : ""}>${u.role === "admin" ? `<option value="admin" selected>Administrador</option>` : roleOptions(u.role, false)}</select></td>
     <td>${u.ativo ? "<span class='badge badge-aprovado'>Ativo</span>" : "<span class='badge badge-rejeitado'>Inativo</span>"}</td>
     <td>${fmtDate(u.created_at)}</td>
-    <td>${isSelf || u.role === "admin" ? "" : `<button class="btn-link" data-toggle="${u.id}" data-ativo="${u.ativo}">${u.ativo ? "Desativar" : "Ativar"}</button>`}</td>
+    <td>${isSelf || u.role === "admin" ? "" : `<button class="btn-link" data-toggle="${u.id}" data-ativo="${u.ativo}">${u.ativo ? "Desativar" : "Ativar"}</button> ${u.ativo ? "" : `<button class="btn-link" data-excluir="${u.id}" data-nome="${esc(u.nome)}">Excluir</button>`}`}</td>
   </tr>`;
 }
 
@@ -132,4 +134,19 @@ async function toggleAtivo(id, ativoAtual) {
   if (error) return toast("Erro: " + error.message, "error");
   toast(ativoAtual ? "Usuário desativado." : "Usuário ativado.");
   render(container, profile);
+}
+
+async function excluirUsuario(id, nome) {
+  const ok = await confirmDialog("Excluir usuário", `Tem certeza que deseja excluir "${nome}" permanentemente? O mesmo e-mail poderá ser usado novamente.`);
+  if (!ok) return;
+  try {
+    const { error, data } = await supabase.functions.invoke("delete-user", {
+      body: { user_id: id },
+    });
+    if (error || data?.error) throw new Error(data?.error || error.message);
+    toast(`Usuário "${nome}" excluído.`);
+    render(container, profile);
+  } catch (err) {
+    toast("Erro ao excluir: " + err.message, "error");
+  }
 }

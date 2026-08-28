@@ -1,0 +1,17 @@
+-- Migração 19: Edge Function para exclusão de usuários
+-- 
+-- Esta migração não executa SQL diretamente. Ela instrui a implantação da
+-- Edge Function supabase/functions/delete-user/index.ts.
+--
+-- Passos:
+-- 1. Garanta que o Supabase CLI esteja instalado: https://supabase.com/docs/guides/cli
+-- 2. No Supabase Dashboard, ative Edge Functions para o projeto.
+-- 3. Execute: supabase functions deploy delete-user
+-- 4. Adicione as secrets necessárias (já são injetadas automaticamente pelo Supabase):
+--    - SUPABASE_URL
+--    - SUPABASE_SERVICE_ROLE_KEY
+-- 5. No Vercel, adicione SUPABASE_FUNCTIONS_URL se não for a padrão (geralmente
+--    https://<ref>.supabase.co/functions/v1).
+--
+-- A função permite que administradores excluam usuários do auth.users e do
+-- public.profiles, liberando o e-mail para novo cadastro.
