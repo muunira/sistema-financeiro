@@ -47,7 +47,7 @@ function draw(users) {
         <label>Setor<select name="setor" required>${setorOptions("")}</select></label>
         <label>E-mail<input name="email" type="email" required /></label>
         <label>Senha inicial<input name="senha" type="password" minlength="6" required /></label>
-        <label>Papel<select name="role">${roleOptions("estoque_compras", false)}</select></label>
+        <label>Papel<select name="role">${roleOptions("estoque_compras", true)}</select></label>
         <button type="submit" class="btn">Criar usuário</button>
       </form>
       <p class="muted">O usuário poderá alterar a senha depois. Guarde a senha inicial para repassá-la.</p>
@@ -98,7 +98,7 @@ async function criarUsuario(e) {
   const role = f.role.value;
 
   if (!setor) return toast("Selecione o setor.", "error");
-  if (role === "admin") return toast("O papel Administrador não pode ser atribuído a novos usuários.", "error");
+
 
   // Usa um cliente isolado para não derrubar a sessão do admin
   const iso = createIsolatedClient();
