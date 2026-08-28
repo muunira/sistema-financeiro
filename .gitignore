@@ -1,2 +1,4 @@
 .env
 js/supabase.js
+supabase/.temp/
+

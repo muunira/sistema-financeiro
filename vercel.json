@@ -3,5 +3,9 @@
   "builds": [
     { "src": "package.json", "use": "@vercel/static-build", "config": { "distDir": "." } }
   ],
+  "rewrites": [
+    { "source": "/", "destination": "/app.html" },
+    { "source": "/:path+", "destination": "/app.html" }
+  ],
   "public": true
 }

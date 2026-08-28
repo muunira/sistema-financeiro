@@ -133,13 +133,13 @@ function renderNav(activeId) {
         grupoAtual = v.group;
         html += `<div class="nav-section">${esc(grupoAtual)}</div>`;
       }
-      html += `<a href="#${id}" class="nav-item ${id === activeId ? "active" : ""}" title="${v.label}">${ICONS[id] || ""}<span>${v.label}</span><span class="nav-badge" id="badge-${id}"></span></a>`;
+      html += `<a href="/${id}" class="nav-item ${id === activeId ? "active" : ""}" title="${v.label}">${ICONS[id] || ""}<span>${v.label}</span><span class="nav-badge" id="badge-${id}"></span></a>`;
     }
     nav.innerHTML = html;
   } else {
     nav.innerHTML = views
       .map(([id, v]) =>
-        `<a href="#${id}" class="nav-item ${id === activeId ? "active" : ""}" title="${v.label}">${ICONS[id] || ""}<span>${v.label}</span><span class="nav-badge" id="badge-${id}"></span></a>`
+        `<a href="/${id}" class="nav-item ${id === activeId ? "active" : ""}" title="${v.label}">${ICONS[id] || ""}<span>${v.label}</span><span class="nav-badge" id="badge-${id}"></span></a>`
       )
       .join("");
   }
@@ -218,8 +218,8 @@ async function init() {
     logout();
   });
 
-  window.addEventListener("hashchange", () => navigate(location.hash.slice(1)));
-  navigate(location.hash.slice(1));
+  window.addEventListener("popstate", () => navigate(location.pathname.slice(1)));
+  navigate(location.pathname.slice(1));
 }
 
 init();
