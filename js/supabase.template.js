@@ -1,14 +1,13 @@
 // =====================================================================
 // Configuração do cliente Supabase
 // =====================================================================
-// 1. Crie um projeto em https://supabase.com
-// 2. Vá em Project Settings > API Keys e copie a URL e a "Publishable key"
-//    (sb_publishable_...). Ela é PÚBLICA e pode ficar no frontend.
-//    NUNCA coloque aqui a "Secret key" (sb_secret_...).
+// Este é um template. Na build, o script build.js gera js/supabase.js
+// substituindo $SUPABASE_URL e $SUPABASE_ANON_KEY pelas variáveis de ambiente.
+// NUNCA coloque a "Secret key" (sb_secret_...) no frontend.
 // =====================================================================
 
-export const SUPABASE_URL = "https://tekrkakctnevkftwpxgn.supabase.co";
-export const SUPABASE_ANON_KEY = "sb_publishable_uYI8501EE3E01p4HxK3nsA_h-Cbx3Ra";
+export const SUPABASE_URL = "$SUPABASE_URL";
+export const SUPABASE_ANON_KEY = "$SUPABASE_ANON_KEY";
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 
