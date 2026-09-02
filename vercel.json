@@ -1,11 +1,9 @@
 {
-  "version": 2,
-  "builds": [
-    { "src": "package.json", "use": "@vercel/static-build", "config": { "distDir": "." } }
-  ],
+  "buildCommand": "npm run build",
+  "outputDirectory": ".",
   "rewrites": [
-    { "source": "/", "destination": "/app.html" },
-    { "source": "/:path+", "destination": "/app.html" }
-  ],
-  "public": true
+    { "source": "/", "destination": "/index.html" },
+    { "source": "/app.html", "destination": "/app.html" },
+    { "source": "/((?!assets/|css/|js/|.*\\.(?:html|png|jpg|jpeg|gif|ico|svg|css|js|json|txt|pdf|zip|woff|woff2|ttf|eot|otf)$).+)", "destination": "/app.html" }
+  ]
 }
