@@ -1,0 +1,9 @@
+Adiciona icones PWA nos tamanhos corretos para instalacao do app.
+
+- Gera icon-192.png, icon-512.png e apple-touch-icon.png a partir do logo
+- Atualiza manifest.json para usar os novos icones
+- Atualiza index.html e app.html com apple-touch-icon e icon 192
+
+Generated with Devin (https://devin.ai)
+
+Co-Authored-By: Devin <158243242+devin-ai-integration[bot]@users.noreply.github.com>
