@@ -88,9 +88,11 @@ function draw(aPagar, todos) {
 function detalhesPagamento(p) {
   const forma = p.forma_pagamento || "-";
   if (forma === "Boleto") {
-    return `<div><strong>Boleto:</strong> ${p.boleto_path
-      ? `<button class="btn-link" data-boleto="${esc(p.boleto_path)}">Ver boleto</button>`
-      : "Não anexado"}</div>`;
+    const boletos = Array.isArray(p.boletos) ? p.boletos : (p.boletos ? [p.boletos] : []);
+    const links = boletos.length
+      ? boletos.map((b, i) => `<button class="btn-link" data-boleto="${esc(b)}">Ver boleto ${i + 1}</button>`).join(" ")
+      : "Não anexado";
+    return `<div><strong>Boletos:</strong> ${links}</div>`;
   }
   if (forma === "Transferência") {
     return `<div class="pagamento-detalhes">
@@ -150,8 +152,9 @@ function verDetalhesPagamento(id) {
   if (!p) return;
   const itens = (p.pedido_itens || []).map((i) => `<li>${esc(i.descricao)} — ${Number(i.quantidade)}</li>`).join("") || "<li class='muted'>Sem itens.</li>";
   const ehBoleto = p.forma_pagamento === "Boleto";
-  const btnBoleto = ehBoleto && p.boleto_path
-    ? `<button class="btn" data-boleto="${esc(p.boleto_path)}">Ver boleto</button>`
+  const boletos = Array.isArray(p.boletos) ? p.boletos : (p.boletos ? [p.boletos] : []);
+  const btnBoleto = ehBoleto && boletos.length
+    ? boletos.map((b, i) => `<button class="btn" data-boleto="${esc(b)}">Ver boleto ${i + 1}</button>`).join(" ")
     : "";
   const btnDados = !ehBoleto
     ? `<button class="btn" data-dados="${p.id}">Ver dados de transferência</button>`
@@ -187,7 +190,7 @@ function verDetalhesPagamento(id) {
     ${dadosTransferencia}
   `;
   const overlay = modalContent(`Detalhes do pagamento #${p.numero}`, html);
-  overlay.querySelector("[data-boleto]")?.addEventListener("click", (e) => { e.stopPropagation(); abrirBoleto(e.target.dataset.boleto); });
+  overlay.querySelectorAll("[data-boleto]").forEach((b) => b.addEventListener("click", (e) => { e.stopPropagation(); abrirBoleto(e.target.dataset.boleto); }));
   overlay.querySelector("[data-comprovante]")?.addEventListener("click", (e) => { e.stopPropagation(); abrirComprovante(e.target.dataset.comprovante); });
   overlay.querySelector("[data-dados]")?.addEventListener("click", (e) => {
     e.stopPropagation();
@@ -202,8 +205,9 @@ async function gerarRelatorio(p) {
   ).join("");
   const total = fmtMoney(p.valor_estimado);
 
+  const boletos = Array.isArray(p.boletos) ? p.boletos : (p.boletos ? [p.boletos] : []);
   const pagamento = p.forma_pagamento === "Boleto"
-    ? ""
+    ? `<div style="margin:1rem 0"><p><strong>Boletos anexados:</strong> ${boletos.length}</p></div>`
     : `<div style="margin:1rem 0">
         <p><strong>Banco:</strong> ${esc(p.banco || "-")}</p>
         <p><strong>Agência:</strong> ${esc(p.agencia || "-")}</p>

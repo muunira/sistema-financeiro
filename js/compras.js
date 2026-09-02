@@ -362,8 +362,9 @@ function cardAprovado(p) {
   const ehBoleto = forma === "Boleto";
   const ehTransf = forma === "Transferência";
 
-  const boletoLink = p.boleto_path
-    ? ` <button type="button" class="btn-link" data-boleto="${esc(p.boleto_path)}">Ver boleto anexo</button>`
+  const boletosAnexados = Array.isArray(p.boletos) ? p.boletos : (p.boletos ? [p.boletos] : []);
+  const boletoLinks = boletosAnexados.length
+    ? `<div style="margin-top:.4rem">${boletosAnexados.map((b, i) => `<button type="button" class="btn-link" data-boleto="${esc(b)}">Ver boleto ${i + 1}</button>`).join(" ")}</div>`
     : "";
 
   return `<div class="pedido-box">
@@ -398,9 +399,9 @@ function cardAprovado(p) {
       </label>
 
       <div class="boleto-area" style="display:${ehBoleto ? 'block' : 'none'}">
-        <label>Boleto (PDF/IMG, máx. 5MB)
-          <input name="arquivo" type="file" accept=".pdf,.png,.jpg,.jpeg" ${!p.boleto_path ? "required" : ""} />
-          ${boletoLink}
+        <label>Boletos (PDF/IMG, máx. 5MB cada — selecione 1 ou mais)
+          <input name="arquivo" type="file" accept=".pdf,.png,.jpg,.jpeg" multiple ${!boletosAnexados.length ? "required" : ""} />
+          ${boletoLinks}
         </label>
       </div>
 
@@ -632,15 +633,22 @@ async function enviarPagamento(e, pedidoId) {
   const patch = { forma_pagamento: forma };
 
   if (forma === "Boleto") {
-    const file = form.arquivo.files[0];
-    if (!file && !pedido.boleto_path) return toast("Anexe o boleto.", "error");
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) return toast("Boleto deve ter no máximo 5MB.", "error");
+    const boletosAtuais = Array.isArray(pedido.boletos) ? pedido.boletos : (pedido.boletos ? [pedido.boletos] : []);
+    const files = Array.from(form.arquivo.files || []);
+    if (!files.length && !boletosAtuais.length) return toast("Anexe pelo menos um boleto.", "error");
+
+    const novosPaths = [];
+    for (const file of files) {
+      if (file.size > 5 * 1024 * 1024) return toast(`Cada boleto deve ter no máximo 5MB: ${file.name}`, "error");
       const ext = file.name.split(".").pop().toLowerCase();
-      const path = `${pedido.id}/${Date.now()}.${ext}`;
+      const path = `${pedido.id}/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
       const { error: upErr } = await supabase.storage.from("boletos").upload(path, file, { contentType: file.type || "application/octet-stream" });
       if (upErr) throw upErr;
-      patch.boleto_path = path;
+      novosPaths.push(path);
+    }
+
+    if (novosPaths.length) {
+      patch.boletos = [...boletosAtuais, ...novosPaths];
     }
   } else if (forma === "Transferência") {
     const campos = ["banco", "agencia", "conta", "razao", "cpf_cnpj", "pix"];
