@@ -24,7 +24,7 @@ begin
   end if;
 
   -- Apaga todos os pedidos (FKs on delete cascade limpam itens, cotações, histórico)
-  delete from public.pedidos;
+  delete from public.pedidos where true;
 
   -- Reseta o número do próximo pedido para 1
   alter sequence if exists public.pedido_numero_seq restart with 1;
