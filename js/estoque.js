@@ -3,6 +3,7 @@
 // =====================================================================
 import { supabase } from "./supabase.js";
 import { esc, fmtDate, statusBadge, toast, pageHeader, modalForm, confirmDialog } from "./ui.js";
+import { getProdutos, invalidateProdutos } from "./cache.js";
 
 let container, profile, produtos = [], aReceber = [], ajustesPendentes = [], ultimosRecebimentos = [];
 let abaAtiva = "produtos";
@@ -21,7 +22,12 @@ export async function render(el, prof, aba = null) {
   container = el;
   profile = prof;
   abaAtiva = aba || abaAtiva || "produtos";
-  await Promise.all([loadProdutos(), loadAReceber(), loadAjustesPendentes(), loadUltimosRecebimentos()]);
+  await Promise.all([
+    getProdutos().then((p) => (produtos = p)),
+    loadAReceber(),
+    loadAjustesPendentes(),
+    loadUltimosRecebimentos(),
+  ]);
   draw();
 }
 
@@ -34,12 +40,6 @@ async function loadAjustesPendentes() {
     .order("created_at", { ascending: false });
   if (error) throw error;
   ajustesPendentes = data || [];
-}
-
-async function loadProdutos() {
-  const { data, error } = await supabase.from("produtos").select("*").order("nome");
-  if (error) throw error;
-  produtos = (data || []).sort((a, b) => String(a.nome || "").localeCompare(b.nome || "", "pt-BR", { sensitivity: "base" }));
 }
 
 // Pedidos aguardando a chegada física dos itens:
@@ -186,6 +186,7 @@ async function excluirProduto(id) {
     if (e1) throw e1;
     const { error: e2 } = await supabase.from("produtos").delete().eq("id", id);
     if (e2) throw e2;
+    invalidateProdutos();
     toast(`Produto "${produto.nome}" excluído.`);
     render(container, profile);
   } catch (err) {
@@ -230,6 +231,7 @@ async function confirmarRecebimento(id) {
       pedido_id: pedido.id, de_status: pedido.status, para_status: "recebido", usuario_id: profile.id,
     });
 
+    invalidateProdutos();
     toast(`Pedido #${pedido.numero} recebido, lançado no estoque e disponível para pagamento/entrega.`);
     render(container, profile);
   } catch (err) {

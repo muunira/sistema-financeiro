@@ -103,6 +103,15 @@ const VIEWS = {
 };
 
 let profile = null;
+let badgeTimer = null;
+
+function requestBadgeUpdate() {
+  if (badgeTimer) return;
+  badgeTimer = setTimeout(() => {
+    badgeTimer = null;
+    atualizarBadges();
+  }, 250);
+}
 
 function availableViews() {
   let views = Object.entries(VIEWS).filter(([, v]) => v.roles.includes(profile.role));
@@ -186,7 +195,7 @@ function renderNav(activeId) {
       )
       .join("");
   }
-  atualizarBadges();
+  requestBadgeUpdate();
 }
 
 async function contar(tabela, filtro = {}) {
@@ -267,7 +276,7 @@ async function init() {
   navigate(location.pathname.slice(1));
 
   // Inicia notificações em tempo real (Supabase Realtime + polling fallback)
-  startRealtime(profile, { onBadgeUpdate: atualizarBadges });
+  startRealtime(profile, { onBadgeUpdate: requestBadgeUpdate });
 }
 
 init();

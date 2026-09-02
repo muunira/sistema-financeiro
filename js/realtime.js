@@ -80,10 +80,11 @@ export function startRealtime(profile, callbacks = {}) {
     });
 
   // Fallback via polling: mantém os contadores atualizados mesmo que o
-  // Realtime ainda não esteja habilitado no banco.
+  // Realtime ainda não esteja habilitado no banco. A cada 30s para não
+  // sobrecarregar a API enquanto o WebSocket não estiver ativo.
   intervalId = setInterval(() => {
     if (badgeCallback) badgeCallback();
-  }, 15000);
+  }, 30000);
 
   return () => {
     channel.unsubscribe();

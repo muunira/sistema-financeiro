@@ -4,15 +4,15 @@
 import { supabase, STATUS_LABELS } from "./supabase.js";
 import { esc, fmtDate, fmtMoney, statusBadge, pageHeader, modalContent } from "./ui.js";
 import { fetchPedidos, itensTexto } from "./pedidos.js";
+import { getProdutos } from "./cache.js";
 
 let container, profile, pedidos = [], produtos = [];
 
 export async function render(el, prof) {
   container = el;
   profile = prof;
-  pedidos = await fetchPedidos();
-  const { data } = await supabase.from("produtos").select("*").order("nome");
-  produtos = (data || []).sort((a, b) => String(a.nome || "").localeCompare(b.nome || "", "pt-BR", { sensitivity: "base" }));
+  [pedidos, produtos] = await Promise.all([fetchPedidos(), getProdutos()]);
+  produtos = produtos.sort((a, b) => String(a.nome || "").localeCompare(b.nome || "", "pt-BR", { sensitivity: "base" }));
   draw();
 }
 

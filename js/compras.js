@@ -4,8 +4,9 @@
 import { supabase } from "./supabase.js";
 import { esc, fmtDate, fmtMoney, statusBadge, toast, pageHeader, modalForm, modalContent, confirmDialog } from "./ui.js";
 import { fetchPedidos, updatePedido } from "./pedidos.js";
+import { getProdutos, getFornecedores, invalidateProdutos, invalidateFornecedores } from "./cache.js";
 
-let container, profile, pendentes = [], aprovados = [], aConferir = [], outros = [], fornecedores = [], fornecedoresErro = null, produtos = [], solicitacoesProduto = [];
+let container, profile, pendentes = [], aprovados = [], aConferir = [], outros = [], fornecedores = [], produtos = [], solicitacoesProduto = [];
 let abaAtiva = "cotar";
 let fornModal = null;
 
@@ -23,11 +24,18 @@ export async function render(el, prof, aba = null) {
   container = el;
   profile = prof;
   abaAtiva = aba || abaAtiva || "cotar";
-  pendentes = await fetchPedidos(["solicitado", "em_cotacao"]);
-  aprovados = await fetchPedidos(["aprovado"]);
-  aConferir = await fetchPedidos(["pago", "recebido"]);
-  outros = await fetchPedidos(["aguardando_diretoria", "aguardando_pagamento", "aguardando_recebimento", "recebido", "rejeitado", "pago", "conferido", "concluido"]);
-  await Promise.all([loadFornecedores(), loadProdutos(), loadSolicitacoesProduto()]);
+
+  await loadSolicitacoesProduto();
+  [produtos, fornecedores] = await Promise.all([getProdutos(), getFornecedores()]);
+
+  // Busca todos os pedidos de uma só vez e filtra no cliente, evitando
+  // 4 queries separadas e 4 buscas de cotações.
+  const todos = await fetchPedidos();
+  pendentes = todos.filter((p) => ["solicitado", "em_cotacao"].includes(p.status));
+  aprovados = todos.filter((p) => p.status === "aprovado");
+  aConferir = todos.filter((p) => ["pago", "recebido"].includes(p.status));
+  outros = todos.filter((p) => ["aguardando_diretoria", "aguardando_pagamento", "aguardando_recebimento", "recebido", "rejeitado", "pago", "conferido", "concluido"].includes(p.status));
+
   draw(aprovados, outros);
 }
 
@@ -39,28 +47,6 @@ async function loadSolicitacoesProduto() {
     .order("nome");
   if (error) throw error;
   solicitacoesProduto = data || [];
-}
-
-async function loadProdutos() {
-  const { data, error } = await supabase.from("produtos").select("*").order("nome");
-  if (error) throw error;
-  produtos = (data || []).sort((a, b) => String(a.nome || "").localeCompare(b.nome || "", "pt-BR", { sensitivity: "base" }));
-}
-
-async function loadFornecedores() {
-  fornecedoresErro = null;
-  try {
-    const { data, error } = await supabase
-      .from("fornecedores")
-      .select("*")
-      .eq("ativo", true)
-      .order("nome");
-    if (error) throw error;
-    fornecedores = data || [];
-  } catch (err) {
-    fornecedores = [];
-    fornecedoresErro = err.message;
-  }
 }
 
 function draw(aprovados, outros) {
@@ -468,8 +454,9 @@ async function adicionarCotacao(e, pedidoId) {
   if (!valor || valor <= 0) return toast("Informe o valor final da cotação.", "error");
 
   try {
-    if (!fornecedoresErro && !fornecedores.some((f) => f.nome.toLowerCase() === fornecedor.toLowerCase())) {
+    if (!fornecedores.some((f) => f.nome.toLowerCase() === fornecedor.toLowerCase())) {
       await supabase.from("fornecedores").insert({ nome: fornecedor, ativo: true });
+      invalidateFornecedores();
     }
 
     let arquivoPath = null;
@@ -555,7 +542,7 @@ async function salvarCotacao(form, c, pedido) {
   if (!valor || valor <= 0) return toast("Informe o valor final da cotação.", "error"), false;
 
   try {
-    if (!fornecedoresErro && !fornecedores.some((f) => f.nome.toLowerCase() === fornecedor.toLowerCase())) {
+    if (!fornecedores.some((f) => f.nome.toLowerCase() === fornecedor.toLowerCase())) {
       await supabase.from("fornecedores").insert({ nome: fornecedor, ativo: true });
     }
 
@@ -870,13 +857,13 @@ async function cadastrarProduto(solicitacaoId = null) {
     if (e2) return toast("Erro ao atualizar solicitação: " + e2.message, "error");
   }
 
+  invalidateProdutos();
   toast(`Produto "${nome}" cadastrado.`);
   render(container, profile);
 }
 
 function abrirListaFornecedores() {
   const html = `
-    ${fornecedoresErro ? `<p class="error">Fornecedores não carregaram: ${esc(fornecedoresErro)} — execute a migração 03 no Supabase.</p>` : ""}
     <table class="table fornecedores-table">
       <thead><tr><th>Nome</th><th style="width:130px">Ações</th></tr></thead>
       <tbody>
@@ -903,7 +890,7 @@ function abrirListaFornecedores() {
 // Recarrega os fornecedores, atualiza a página e reabre o modal da lista
 async function refreshFornecedores() {
   if (fornModal) { fornModal.remove(); fornModal = null; }
-  await loadFornecedores();
+  fornecedores = await getFornecedores(true);
   draw(aprovados, outros);
   abrirListaFornecedores();
 }

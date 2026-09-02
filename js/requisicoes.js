@@ -3,6 +3,7 @@
 // =====================================================================
 import { supabase } from "./supabase.js";
 import { esc, fmtDate, statusBadge, toast, pageHeader, modalForm, modalContent } from "./ui.js";
+import { getProdutos } from "./cache.js";
 
 let container, profile, produtos = [], requisicoes = [], solicitacoes = [];
 let abaAtiva = "nova";
@@ -21,7 +22,7 @@ export async function render(el, prof, aba = "nova") {
   container = el;
   profile = prof;
   abaAtiva = aba;
-  await Promise.all([loadProdutos(), loadSolicitacoes()]);
+  await Promise.all([getProdutos().then((p) => (produtos = p)), loadSolicitacoes()]);
   requisicoes = await loadMinhasRequisicoes();
   draw(requisicoes);
 }
@@ -35,12 +36,6 @@ async function loadSolicitacoes() {
     .order("created_at", { ascending: false });
   if (error) throw error;
   solicitacoes = data || [];
-}
-
-async function loadProdutos() {
-  const { data, error } = await supabase.from("produtos").select("*").order("nome");
-  if (error) throw error;
-  produtos = (data || []).sort((a, b) => String(a.nome || "").localeCompare(b.nome || "", "pt-BR", { sensitivity: "base" }));
 }
 
 async function loadMinhasRequisicoes() {

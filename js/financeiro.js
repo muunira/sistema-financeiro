@@ -22,8 +22,8 @@ export async function render(el, prof, aba = "pagar") {
   container = el;
   profile = prof;
   abaAtiva = aba;
-  const aPagar = await fetchPedidos(["aguardando_pagamento", "recebido"]);
   const todos = await fetchPedidos();
+  const aPagar = todos.filter((p) => ["aguardando_pagamento", "recebido"].includes(p.status));
   draw(aPagar, todos);
 }
 

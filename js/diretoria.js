@@ -4,6 +4,7 @@
 import { supabase } from "./supabase.js";
 import { esc, fmtDate, fmtMoney, statusBadge, toast, pageHeader, modalForm, modalContent } from "./ui.js";
 import { fetchPedidos, updatePedido } from "./pedidos.js";
+import { getProdutos, invalidateProdutos } from "./cache.js";
 
 let container, profile, pendentes = [], ajustesPendentes = [], pedidosDecididos = [];
 let produtos = [];
@@ -23,11 +24,12 @@ export async function render(el, prof, aba = "compras") {
   container = el;
   profile = prof;
   abaAtiva = aba;
-  const { data: prods } = await supabase.from("produtos").select("*").order("nome");
-  produtos = (prods || []).sort((a, b) => String(a.nome || "").localeCompare(b.nome || "", "pt-BR", { sensitivity: "base" }));
-  pendentes = await fetchPedidos(["aguardando_diretoria"]);
+
   const todos = await fetchPedidos();
-  ajustesPendentes = await carregarAjustesPendentes();
+  pendentes = todos.filter((p) => p.status === "aguardando_diretoria");
+  [produtos, ajustesPendentes] = await Promise.all([getProdutos(), carregarAjustesPendentes()]);
+  produtos = produtos.sort((a, b) => String(a.nome || "").localeCompare(b.nome || "", "pt-BR", { sensitivity: "base" }));
+
   draw(todos);
 }
 
@@ -309,6 +311,7 @@ async function aprovarAjuste(id) {
     }).eq("id", a.id);
     if (e2) throw e2;
 
+    invalidateProdutos();
     toast(`Ajuste aprovado. Quantidade de ${a.produto?.nome || "produto"} alterada para ${nova}.`);
     render(container, profile);
   } catch (err) {
