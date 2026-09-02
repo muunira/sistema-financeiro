@@ -5,7 +5,7 @@
 -- Requer as migrações anteriores.
 --
 -- 1) (Re)cria a função RPC que apaga todos os pedidos e reseta a
-n--    sequência de numeração, mesmo com RLS ativo (security definer).
+--    sequência de numeração, mesmo com RLS ativo (security definer).
 -- 2) Concede permissão de execução para usuários autenticados.
 -- 3) Recarrega o cache do PostgREST para que a função apareça no RPC.
 -- =====================================================================
