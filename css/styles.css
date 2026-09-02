@@ -98,7 +98,7 @@ body {
   animation: pop .35s ease;
 }
 @keyframes pop { from { opacity: 0; transform: translateY(12px) scale(.98); } }
-.login-logo { width: 64px; height: 64px; display: block; margin: 0 auto 1.1rem; }
+.login-logo { width: 64px; height: 64px; display: block; margin: 0 auto 1.1rem; object-fit: contain; }
 .login-card h1 { font-size: 1.5rem; font-weight: 800; margin: 0 0 .35rem; letter-spacing: -.02em; text-align: center; }
 .login-card .login-sub { text-align: center; }
 .login-sub { color: var(--muted); margin: 0 0 1.6rem; font-size: .92rem; }
