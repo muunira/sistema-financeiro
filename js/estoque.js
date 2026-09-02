@@ -4,7 +4,7 @@
 import { supabase } from "./supabase.js";
 import { esc, fmtDate, statusBadge, toast, pageHeader, modalForm, confirmDialog } from "./ui.js";
 
-let container, profile, produtos = [], aReceber = [], ajustesPendentes = [];
+let container, profile, produtos = [], aReceber = [], ajustesPendentes = [], ultimosRecebimentos = [];
 let abaAtiva = "produtos";
 
 function mostrarAba(nome) {
@@ -17,11 +17,11 @@ function mostrarAba(nome) {
   });
 }
 
-export async function render(el, prof, aba = "produtos") {
+export async function render(el, prof, aba = null) {
   container = el;
   profile = prof;
-  abaAtiva = aba;
-  await Promise.all([loadProdutos(), loadAReceber(), loadAjustesPendentes()]);
+  abaAtiva = aba || abaAtiva || "produtos";
+  await Promise.all([loadProdutos(), loadAReceber(), loadAjustesPendentes(), loadUltimosRecebimentos()]);
   draw();
 }
 
@@ -39,18 +39,35 @@ async function loadAjustesPendentes() {
 async function loadProdutos() {
   const { data, error } = await supabase.from("produtos").select("*").order("nome");
   if (error) throw error;
-  produtos = data || [];
+  produtos = (data || []).sort((a, b) => String(a.nome || "").localeCompare(b.nome || "", "pt-BR", { sensitivity: "base" }));
 }
 
-// Pedidos já pagos, aguardando a chegada física dos itens
+// Pedidos aguardando a chegada física dos itens:
+// - 'aguardando_recebimento': fluxo "pagar depois" (receber antes de pagar)
+// - 'pago': fluxo padrão (pagar antes de receber)
 async function loadAReceber() {
   const { data, error } = await supabase
     .from("pedidos")
     .select("*, pedido_itens(*)")
-    .eq("status", "pago")
+    .in("status", ["pago", "aguardando_recebimento"])
     .order("numero", { ascending: false });
   if (error) throw error;
   aReceber = data || [];
+}
+
+async function loadUltimosRecebimentos() {
+  const hoje = new Date();
+  const inicio = new Date(hoje.getFullYear(), hoje.getMonth(), 1).toISOString();
+  const fim = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 1).toISOString();
+  const { data, error } = await supabase
+    .from("pedidos")
+    .select("*, pedido_itens(*), criador:criado_por(nome, setor), comprador:comprador_id(nome), aprovador:aprovado_por(nome)")
+    .eq("status", "recebido")
+    .gte("data_recebimento", inicio)
+    .lt("data_recebimento", fim)
+    .order("data_recebimento", { ascending: false });
+  if (error) throw error;
+  ultimosRecebimentos = data || [];
 }
 
 const TITULO_ESTOQUE = {
@@ -68,18 +85,20 @@ function draw() {
       <div class="card-head"><h3>Produtos em estoque</h3></div>
       <table class="table">
         <thead><tr>
-          <th>Produto</th><th>SKU</th><th>Un.</th>
-          <th>Qtd. atual</th><th>Estoque mín.</th><th></th>
+          <th>Produto</th><th>Qtd. atual</th><th>Estoque mín.</th><th></th>
         </tr></thead>
         <tbody>
-          ${produtos.map(rowProduto).join("") || `<tr><td colspan="6" class="muted">Nenhum produto cadastrado.</td></tr>`}
+          ${produtos.map(rowProduto).join("") || `<tr><td colspan="4" class="muted">Nenhum produto cadastrado.</td></tr>`}
         </tbody>
       </table>
     </section>
 
     <section class="card" data-sec="recebimento" style="display:none">
       <div class="card-head"><h3>Aguardando recebimento (${aReceber.length})</h3></div>
-      ${aReceber.map(cardRecebimento).join("") || `<p class="muted">Nenhum pedido pago aguardando recebimento.</p>`}
+      ${aReceber.map(cardRecebimento).join("") || `<p class="muted">Nenhum pedido aguardando recebimento.</p>`}
+
+      <div class="card-head" style="margin-top:1.6rem"><h3>Recebimentos do mês (${ultimosRecebimentos.length})</h3></div>
+      ${ultimosRecebimentos.map(cardUltimoRecebimento).join("") || `<p class="muted">Nenhum recebimento recente.</p>`}
     </section>
 
     <section class="card" data-sec="ajustes" style="display:none">
@@ -107,9 +126,10 @@ function draw() {
 }
 
 function rowProduto(p) {
-  const baixo = Number(p.quantidade_atual) <= Number(p.estoque_minimo);
+  const minimo = Number(p.estoque_minimo) || 0;
+  const baixo = minimo > 0 && Number(p.quantidade_atual) <= minimo;
   return `<tr class="${baixo ? "row-alert" : ""}">
-    <td>${esc(p.nome)}</td><td>${esc(p.sku || "-")}</td><td>${esc(p.unidade)}</td>
+    <td>${esc(p.nome)}</td>
     <td>${esc(p.quantidade_atual)} ${baixo ? "⚠️" : ""}</td>
     <td>${esc(p.estoque_minimo)}</td>
     <td>
@@ -131,13 +151,26 @@ function cardRecebimento(p) {
   return `<div class="pedido-box">
     <div class="pedido-top">
       <strong>Pedido #${p.numero}</strong> ${statusBadge(p.status)}
-      <span class="muted"> · fornecedor ${esc(p.fornecedor || "-")} · pago em ${fmtDate(p.data_pagamento)}</span>
+      <span class="muted"> · fornecedor ${esc(p.fornecedor || "-")} · ${p.dias_pagamento ? `${p.dias_pagamento} dia(s) p/ pagar` : "pagamento a definir"}</span>
     </div>
     <ul class="item-list">${linhas}</ul>
     ${temAvulso ? `<p class="muted">Itens avulsos não são somados automaticamente. Ajuste a quantidade manualmente na tabela de produtos.</p>` : ""}
     <div class="actions">
       <button class="btn btn-ok" data-receber="${p.id}">Dar OK no recebimento</button>
     </div>
+  </div>`;
+}
+
+function cardUltimoRecebimento(p) {
+  const linhas = (p.pedido_itens || []).map((i) =>
+    `<li>${esc(i.descricao)} — ${Number(i.quantidade)}</li>`
+  ).join("") || "<li class='muted'>Sem itens.</li>";
+  return `<div class="pedido-box">
+    <div class="pedido-top">
+      <strong>Pedido #${p.numero}</strong>
+      <span class="muted"> · recebido em ${fmtDate(p.data_recebimento)} · fornecedor ${esc(p.fornecedor || "-")}</span>
+    </div>
+    <ul class="item-list">${linhas}</ul>
   </div>`;
 }
 
@@ -164,9 +197,10 @@ async function excluirProduto(id) {
 async function confirmarRecebimento(id) {
   const pedido = aReceber.find((p) => p.id === id);
   if (!pedido) return;
+  if (!["pago", "aguardando_recebimento"].includes(pedido.status)) return toast("Este pedido não está aguardando recebimento.", "error");
   const ok = await confirmDialog(
     "Confirmar recebimento",
-    `Confirmar a chegada dos itens do pedido #${pedido.numero}? As quantidades vinculadas a produtos serão somadas ao estoque.`
+    `Confirmar a chegada dos itens do pedido #${pedido.numero}? As quantidades vinculadas a produtos serão somadas ao estoque.\n\nApós confirmar, o pedido estará disponível para pagamento/entrega.`
   );
   if (!ok) return;
 
@@ -193,10 +227,10 @@ async function confirmarRecebimento(id) {
     if (e1) throw e1;
 
     await supabase.from("historico").insert({
-      pedido_id: pedido.id, de_status: "pago", para_status: "recebido", usuario_id: profile.id,
+      pedido_id: pedido.id, de_status: pedido.status, para_status: "recebido", usuario_id: profile.id,
     });
 
-    toast(`Pedido #${pedido.numero} recebido e lançado no estoque.`);
+    toast(`Pedido #${pedido.numero} recebido, lançado no estoque e disponível para pagamento/entrega.`);
     render(container, profile);
   } catch (err) {
     toast("Erro: " + err.message, "error");

@@ -19,14 +19,14 @@ function mostrarAba(nome) {
   });
 }
 
-export async function render(el, prof, aba = "cotar") {
+export async function render(el, prof, aba = null) {
   container = el;
   profile = prof;
-  abaAtiva = aba;
+  abaAtiva = aba || abaAtiva || "cotar";
   pendentes = await fetchPedidos(["solicitado", "em_cotacao"]);
   aprovados = await fetchPedidos(["aprovado"]);
-  aConferir = await fetchPedidos(["recebido"]);
-  outros = await fetchPedidos(["aguardando_diretoria", "aguardando_pagamento", "rejeitado", "pago", "conferido"]);
+  aConferir = await fetchPedidos(["pago", "recebido"]);
+  outros = await fetchPedidos(["aguardando_diretoria", "aguardando_pagamento", "aguardando_recebimento", "recebido", "rejeitado", "pago", "conferido", "concluido"]);
   await Promise.all([loadFornecedores(), loadProdutos(), loadSolicitacoesProduto()]);
   draw(aprovados, outros);
 }
@@ -36,7 +36,7 @@ async function loadSolicitacoesProduto() {
     .from("solicitacoes_produto")
     .select("*")
     .eq("status", "pendente")
-    .order("created_at");
+    .order("nome");
   if (error) throw error;
   solicitacoesProduto = data || [];
 }
@@ -44,7 +44,7 @@ async function loadSolicitacoesProduto() {
 async function loadProdutos() {
   const { data, error } = await supabase.from("produtos").select("*").order("nome");
   if (error) throw error;
-  produtos = data || [];
+  produtos = (data || []).sort((a, b) => String(a.nome || "").localeCompare(b.nome || "", "pt-BR", { sensitivity: "base" }));
 }
 
 async function loadFornecedores() {
@@ -83,7 +83,7 @@ function draw(aprovados, outros) {
   const titulo = {
     cotar: "Pedidos a cotar",
     pagar: "Aprovados — preencher pagamento",
-    conferir: "Confirmar entrega de requisições",
+    conferir: "Confirmar entrega aos setores",
     historico: "Histórico de requisições",
     fornecedores: "Lista de fornecedores",
     solicitacoes: "Solicitações de novos produtos",
@@ -103,8 +103,8 @@ function draw(aprovados, outros) {
     </section>
 
     <section class="card" data-sec="conferir" style="display:none">
-      <div class="card-head"><h3>Confirmar entrega de requisições (${aConferir.length})</h3></div>
-      ${aConferir.map((p) => cardConferir(p)).join("") || `<p class="muted">Nenhum pedido aguardando conferência.</p>`}
+      <div class="card-head"><h3>Confirmar entrega aos setores (${aConferir.length})</h3></div>
+      ${aConferir.map((p) => cardConferir(p)).join("") || `<p class="muted">Nenhum pedido recebido aguardando entrega/distribuição ao setor.</p>`}
     </section>
 
     <section class="card" data-sec="historico" style="display:none">
@@ -143,21 +143,43 @@ function draw(aprovados, outros) {
   container.querySelectorAll("[data-cadastrar-produto]").forEach((b) =>
     b.addEventListener("click", () => cadastrarProduto(b.dataset.cadastrarProduto)));
   container.querySelectorAll("[data-conferir]").forEach((b) =>
-    b.addEventListener("click", () => conferirPedido(b.dataset.conferir)));
+    b.addEventListener("click", () => conferirPedido(null, b.dataset.conferir)));
   container.querySelectorAll("[data-add-cotacao]").forEach((f) => {
     f.addEventListener("submit", (e) => adicionarCotacao(e, f.dataset.addCotacao));
-    f.addEventListener("input", () => atualizarTotais(f));
-    atualizarTotais(f);
   });
+  container.querySelectorAll("[data-arquivo-cot]").forEach((b) =>
+    b.addEventListener("click", () => abrirArquivoCotacao(b.dataset.arquivoCot)));
   container.querySelectorAll("[data-remover-cot]").forEach((b) =>
     b.addEventListener("click", () => removerCotacao(b.dataset.removerCot)));
+  container.querySelectorAll("[data-editar-cot]").forEach((b) =>
+    b.addEventListener("click", () => editarCotacao(b.dataset.editarCot)));
   container.querySelectorAll("[data-enviar]").forEach((b) =>
     b.addEventListener("click", () => enviar(b.dataset.enviar)));
   container.querySelectorAll("[data-pagamento]").forEach((f) => {
     f.addEventListener("submit", (e) => enviarPagamento(e, f.dataset.pagamento));
     const sel = f.querySelector("select[name='forma']");
-    sel.addEventListener("change", () => toggleForma(f));
+    sel?.addEventListener("change", () => toggleForma(f));
     toggleForma(f);
+  });
+  container.querySelectorAll("[data-pagar-apos]").forEach((chk) =>
+    chk.addEventListener("change", () => {
+      const label = container.querySelector(`[data-dias-label="${chk.dataset.pagarApos}"]`);
+      if (label) label.style.display = chk.checked ? "block" : "none";
+    }));
+  const campoColuna = {
+    "num-sol": "numero_solicitacao",
+    "tipo": "tipo",
+    "centro-custo": "centro_custo",
+    "justificativa-compra": "justificativa_compra",
+  };
+  Object.entries(campoColuna).forEach(([attr, coluna]) => {
+    container.querySelectorAll(`[data-${attr}]`).forEach((el) => {
+      el.addEventListener("blur", async () => {
+        const pedidoId = el.dataset[attr.replace(/-([a-z])/g, (_, c) => c.toUpperCase())];
+        const valor = el.value.trim() || null;
+        await supabase.from("pedidos").update({ [coluna]: valor }).eq("id", pedidoId);
+      });
+    });
   });
   container.querySelectorAll("[data-retirar-item]").forEach((b) =>
     b.addEventListener("click", () => retirarItem(b.dataset.retirarItem)));
@@ -190,22 +212,33 @@ function cardPedido(p, fornList) {
     ? p.cotacoes.map((c) => cotationBox(c, p)).join("")
     : `<p class="muted" style="margin:.4rem 0">Nenhuma cotação adicionada.</p>`;
 
-  const linhas = (p.pedido_itens || []).map((i) => `
-    <tr data-pedido-item-id="${i.id}">
-      <td>${esc(i.descricao)}</td>
-      <td class="qtd">${Number(i.quantidade)}</td>
-      <td><input name="unit-${i.id}" type="number" step="0.01" min="0" class="valor-unit" data-qtd="${Number(i.quantidade)}" /></td>
-    </tr>`).join("");
+  const resumo = (p.pedido_itens || []).reduce((acc, i) => {
+    const produto = produtos.find((x) => x.id === i.produto_id);
+    const estoque = produto ? Number(produto.quantidade_atual || 0) : 0;
+    const qtd = Number(i.quantidade);
+    const doEstoque = produto ? Math.min(qtd, estoque) : 0;
+    const aComprar = produto ? Math.max(0, qtd - doEstoque) : qtd;
+    const retirado = Number(i.quantidade_retirada || 0);
+    acc.pedido += qtd;
+    acc.estoque += doEstoque;
+    acc.comprar += aComprar;
+    acc.retirado += retirado;
+    return acc;
+  }, { pedido: 0, estoque: 0, comprar: 0, retirado: 0 });
 
   const linhasItens = (p.pedido_itens || []).map((i) => {
     const produto = produtos.find((x) => x.id === i.produto_id);
     const estoque = produto ? Number(produto.quantidade_atual || 0) : 0;
+    const qtd = Number(i.quantidade);
+    const doEstoque = produto ? Math.min(qtd, estoque) : 0;
+    const aComprar = produto ? Math.max(0, qtd - doEstoque) : qtd;
+    const retirado = Number(i.quantidade_retirada || 0);
     const aviso = produto
-      ? `<span class="muted">estoque atual: ${estoque} ${estoque >= Number(i.quantidade) ? '<span class="badge badge-aprovado">já tem</span>' : ''}</span>`
-      : `<span class="muted">avulso</span>`;
+      ? `<span class="muted">do estoque: ${doEstoque} — a comprar: ${aComprar} — já retirado: ${retirado}</span>`
+      : `<span class="muted">avulso — a comprar: ${qtd}</span>`;
     return `<tr>
       <td>${esc(i.descricao)}</td>
-      <td>${Number(i.quantidade)}</td>
+      <td>${qtd}</td>
       <td>${aviso}</td>
       <td style="width:130px"><button class="btn-link" data-retirar-item="${p.id}:${i.id}">Retirar do pedido</button></td>
     </tr>`;
@@ -226,36 +259,63 @@ function cardPedido(p, fornList) {
       </div>
       ${statusBadge(p.status)}
     </div>
+
+    <div class="pedido-campos" style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin:.8rem 0;align-items:start">
+      <label>Nº da solicitação
+        <input data-num-sol="${p.id}" value="${esc(p.numero_solicitacao || "")}" placeholder="Ex.: 12345" required />
+      </label>
+      <label>Especificação de Compra
+        <input data-tipo="${p.id}" value="${esc(p.tipo || "")}" placeholder="Ex.: Materiais de Limpeza" />
+      </label>
+      <label>Centro de Custo ou Local de Faturamento
+        <input data-centro-custo="${p.id}" value="${esc(p.centro_custo || "")}" placeholder="Ex.: Loja Centro" />
+      </label>
+      <label>Justificativa de Solicitação de Compra
+        <textarea data-justificativa-compra="${p.id}" rows="1" style="width:100%" placeholder="Descreva o motivo da compra">${esc(p.justificativa_compra || "")}</textarea>
+      </label>
+    </div>
+
     ${p.justificativa ? `<div class="muted">Justificativa: ${esc(p.justificativa)}</div>` : ""}
 
     <h4 style="margin:.9rem 0 .2rem">Itens</h4>
+    <div class="muted" style="margin:0 0 .6rem">
+      Total do pedido: <strong>${resumo.pedido}</strong> —
+      Do estoque: <strong>${resumo.estoque}</strong> —
+      A comprar: <strong>${resumo.comprar}</strong> —
+      Já retirado: <strong>${resumo.retirado}</strong>
+    </div>
     <table class="table" style="margin:.4rem 0">
       <thead><tr><th>Item</th><th>Qtd</th><th>Estoque</th><th></th></tr></thead>
       <tbody>${linhasItens || `<tr><td colspan="4" class="muted">Nenhum item.</td></tr>`}</tbody>
     </table>
 
-    <h4 style="margin:.9rem 0 .2rem">Cotações</h4>
+    <h4 style="margin:.9rem 0 .2rem">Cotações Realizadas:</h4>
     ${cotacoesHtml}
 
     <form data-add-cotacao="${p.id}" class="cotacao-form" style="margin-top:1rem">
       <h4 style="margin:.6rem 0 .2rem">Nova cotação</h4>
-      <label>Fornecedor
+      <label>Distribuidora
         <input name="fornecedor" list="forn-list-${p.id}" required />
         <datalist id="forn-list-${p.id}">${fornList}</datalist>
       </label>
-      <table class="table" style="margin:.4rem 0">
-        <thead><tr><th>Item</th><th>Qtd</th><th>Valor unitário (R$)</th></tr></thead>
-        <tbody>${linhas}</tbody>
-      </table>
+      <label>Valor final (R$)
+        <input name="valor" type="number" step="0.01" min="0" required />
+      </label>
+      <label data-dias-label="${p.id}" style="display:${p.pagar_apos ? "block" : "none"}">Dias para pagar
+        <input name="dias_pagamento" type="number" min="0" placeholder="Ex.: 30" />
+      </label>
+      <label>Arquivo da cotação (PDF/IMG, máx. 5MB)
+        <input name="arquivo" type="file" accept=".pdf,.png,.jpg,.jpeg" />
+      </label>
       <label>Observações (opcional)
         <textarea name="obs" rows="2" style="width:100%" placeholder="Prazo de entrega, condições, validade..."></textarea>
       </label>
-      <div class="total-row">Total estimado: <strong class="total">-</strong></div>
       <button type="submit" class="btn">Salvar cotação</button>
     </form>
 
-    <label>Observações finais (opcional)
-      <textarea data-obs="${p.id}" rows="2" style="width:100%">${esc(p.obs_compras || "")}</textarea>
+    <label style="display:flex;align-items:center;gap:.5rem;margin:.6rem 0;font-weight:500">
+      <input type="checkbox" data-pagar-apos="${p.id}" ${p.pagar_apos ? "checked" : ""} style="width:auto;margin:0" />
+      Receber primeiro, pagar depois (o pedido vai ao Estoque antes do Financeiro)
     </label>
 
     <div class="actions">
@@ -274,40 +334,29 @@ function cardPedido(p, fornList) {
 }
 
 function cotationBox(c, p) {
-  const itens = (c.itens || []).map((ci) => {
-    const item = (p.pedido_itens || []).find((i) => i.id === ci.pedido_item_id);
-    if (!item) return "";
-    const sub = (Number(item.quantidade) || 0) * (Number(ci.valor_unitario) || 0);
-    return `<li>${esc(item.descricao)} (${item.quantidade}) × ${fmtMoney(ci.valor_unitario)} = ${fmtMoney(sub)}</li>`;
-  }).join("");
-  const total = (c.itens || []).reduce((s, ci) => {
-    const item = (p.pedido_itens || []).find((i) => i.id === ci.pedido_item_id);
-    if (!item) return s;
-    return s + (Number(item.quantidade) || 0) * (Number(ci.valor_unitario) || 0);
-  }, 0);
-
+  const arquivoBtn = c.arquivo_path
+    ? ` <button class="btn-link" data-arquivo-cot="${esc(c.arquivo_path)}">Ver orçamento</button>`
+    : ` <span class="muted">(sem arquivo)</span>`;
+  const dias = c.dias_pagamento ? ` · ${c.dias_pagamento} dia(s)` : "";
   return `<div class="cotacao-box">
     <div class="cotacao-head">
       <strong>${esc(c.fornecedor)}</strong>
-      <span>Total: ${fmtMoney(total)}</span>
+      <span>Valor: ${fmtMoney(c.valor)}${dias}</span>
+      ${arquivoBtn}
+      <button class="btn-link" data-editar-cot="${c.id}">Editar</button>
       <button class="btn-link" data-remover-cot="${c.id}">Excluir</button>
     </div>
-    <ul class="item-list">${itens}</ul>
     ${c.observacoes ? `<p class="muted">Observações: ${esc(c.observacoes)}</p>` : ""}
   </div>`;
 }
 
 function cardAprovado(p) {
   const escolhida = p.cotacoes?.find((c) => c.id === p.cotacao_escolhida);
-  const total = escolhida ? cotacaoTotal(escolhida, p) : 0;
-  const itensHtml = escolhida
-    ? `<ul class="item-list">${(escolhida.itens || []).map((ci) => {
-        const item = p.pedido_itens.find((i) => i.id === ci.pedido_item_id);
-        if (!item) return "";
-        const sub = (Number(item.quantidade) || 0) * (Number(ci.valor_unitario) || 0);
-        return `<li>${esc(item.descricao)} (${item.quantidade}) × ${fmtMoney(ci.valor_unitario)} = ${fmtMoney(sub)}</li>`;
-      }).join("")}</ul>`
-    : `<p class="muted">Cotação não encontrada.</p>`;
+  const total = escolhida ? Number(escolhida.valor || 0) : Number(p.valor_estimado || 0);
+  const itensHtml = `<ul class="item-list">${(p.pedido_itens || []).map((i) => `<li>${esc(i.descricao)} (${Number(i.quantidade)})</li>`).join("")}</ul>`;
+  const arquivoBtn = escolhida?.arquivo_path
+    ? `<button type="button" class="btn-link" data-arquivo-cot="${esc(escolhida.arquivo_path)}">Ver orçamento da cotação</button>`
+    : "";
 
   const forma = ["Boleto", "Transferência"].includes(p.forma_pagamento) ? p.forma_pagamento : "Transferência";
   const ehBoleto = forma === "Boleto";
@@ -327,8 +376,18 @@ function cardAprovado(p) {
       </div>
       ${statusBadge(p.status)}
     </div>
-    <p><strong>Total:</strong> ${fmtMoney(total)}</p>
+    <p><strong>Valor final:</strong> ${fmtMoney(total)}</p>
+    <p><strong>Nº solicitação:</strong> ${esc(p.numero_solicitacao || "-")}</p>
+    <p><strong>Especificação de Compra:</strong> ${esc(p.tipo || "-")}</p>
+    <p><strong>Centro de Custo / Local de Faturamento:</strong> ${esc(p.centro_custo || "-")}</p>
+    ${p.justificativa_compra ? `<p><strong>Justificativa de Solicitação de Compra:</strong> ${esc(p.justificativa_compra)}</p>` : ""}
+    <p><strong>Dias para pagar:</strong> ${p.dias_pagamento ?? "-"} ${arquivoBtn}</p>
     ${itensHtml}
+    <p class="muted" style="margin-top:.6rem">
+      ${p.pagar_apos
+        ? "Fluxo: receber primeiro, pagar depois. Preencha os dados e envie ao Estoque para recebimento."
+        : "Fluxo: pagar primeiro, receber depois. Preencha os dados e envie ao Financeiro para pagamento."}
+    </p>
 
     <form data-pagamento="${p.id}" class="pagamento-form" style="margin-top:1rem">
       <label>Forma de pagamento
@@ -354,7 +413,7 @@ function cardAprovado(p) {
         <label>PIX <input name="pix" value="${esc(p.pix || "")}" required /></label>
       </div>
 
-      <button type="submit" class="btn btn-ok">Enviar para Financeiro</button>
+      <button type="submit" class="btn btn-ok">${p.pagar_apos ? "Enviar para Estoque (recebimento)" : "Enviar para Financeiro (pagamento)"}</button>
     </form>
   </div>`;
 }
@@ -365,80 +424,70 @@ function cardConferir(p) {
     const baixa = produto ? `<span class="muted">(baixa no estoque)</span>` : `<span class="muted">avulso</span>`;
     return `<li>${esc(i.descricao)} — ${Number(i.quantidade)} ${esc(produto?.unidade || "")} ${baixa}</li>`;
   }).join("");
+
+  const podeConferir = (p.pagar_apos && p.status === "pago") || (!p.pagar_apos && p.status === "recebido");
+  const botao = podeConferir
+    ? `<button class="btn btn-ok" data-conferir="${p.id}">Confirmar distribuição ao setor</button>`
+    : `<span class="muted">Aguardando ${p.pagar_apos ? "pagamento" : "recebimento"} antes de entregar.</span>`;
+
   return `<div class="pedido-box">
     <div class="pedido-top" style="display:flex;justify-content:space-between;align-items:flex-start">
       <div>
         <div style="font-size:1.1rem;font-weight:600">Pedido #${p.numero}</div>
         <div class="muted">Setor: ${esc(p.criador?.setor || "-")}</div>
         <div class="muted">Fornecedor: ${esc(p.fornecedor || "-")}</div>
-        <div class="muted">Recebido em: ${fmtDate(p.data_recebimento)}</div>
+        <div class="muted">Solicitado por: ${esc(p.criador?.nome || "-")}</div>
       </div>
       ${statusBadge(p.status)}
     </div>
-    <h4 style="margin:.9rem 0 .2rem">Itens</h4>
+    <h4 style="margin:.9rem 0 .2rem">Itens a distribuir</h4>
     <ul class="item-list">${linhas}</ul>
-    <div class="actions">
-      <button class="btn btn-ok" data-conferir="${p.id}">Conferir e baixar do estoque</button>
-    </div>
+    <p class="muted">Confirme a distribuição dos itens ao setor solicitante. As quantidades vinculadas a produtos serão removidas do estoque automaticamente.</p>
+    <div class="actions">${botao}</div>
   </div>`;
 }
 
-function cotacaoTotal(c, p) {
-  return (c.itens || []).reduce((s, ci) => {
-    const item = (p.pedido_itens || []).find((i) => i.id === ci.pedido_item_id);
-    if (!item) return s;
-    return s + (Number(item.quantidade) || 0) * (Number(ci.valor_unitario) || 0);
-  }, 0);
-}
-
-function atualizarTotais(form) {
-  const rows = form.querySelectorAll("tbody tr[data-pedido-item-id]");
-  let total = 0;
-  rows.forEach((r) => {
-    const qtd = Number(r.querySelector(".qtd").textContent) || 0;
-    const unit = Number(r.querySelector(".valor-unit").value) || 0;
-    total += qtd * unit;
-  });
-  form.querySelector(".total").textContent = fmtMoney(total);
+async function abrirArquivoCotacao(path) {
+  try {
+    const { data, error } = await supabase.storage.from("cotacoes").createSignedUrl(path, 120);
+    if (error) throw error;
+    window.open(data.signedUrl, "_blank");
+  } catch (err) {
+    toast("Não foi possível abrir o arquivo: " + err.message, "error");
+  }
 }
 
 async function adicionarCotacao(e, pedidoId) {
   e.preventDefault();
   const form = e.target;
-  const pedido = pendentes.find((p) => p.id === pedidoId);
   const fornecedor = form.fornecedor.value.trim();
-  if (!fornecedor) return toast("Informe o fornecedor.", "error");
+  if (!fornecedor) return toast("Informe a distribuidora.", "error");
 
-  const rows = form.querySelectorAll("tbody tr[data-pedido-item-id]");
-  const itensPayload = [];
-  let total = 0;
-  rows.forEach((r) => {
-    const pedidoItemId = r.dataset.pedidoItemId;
-    const qtd = Number(r.querySelector(".qtd").textContent) || 0;
-    const unit = Number(r.querySelector(".valor-unit").value) || 0;
-    total += qtd * unit;
-    itensPayload.push({ pedido_item_id: pedidoItemId, valor_unitario: unit });
-  });
-
-  if (!itensPayload.length) return toast("Pedido sem itens.", "error");
+  const valor = Number(form.valor.value);
+  if (!valor || valor <= 0) return toast("Informe o valor final da cotação.", "error");
 
   try {
     if (!fornecedoresErro && !fornecedores.some((f) => f.nome.toLowerCase() === fornecedor.toLowerCase())) {
       await supabase.from("fornecedores").insert({ nome: fornecedor, ativo: true });
     }
 
+    let arquivoPath = null;
+    const file = form.arquivo.files[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) return toast("O arquivo deve ter no máximo 5MB.", "error");
+      const ext = file.name.split(".").pop().toLowerCase();
+      arquivoPath = `${pedidoId}/${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage.from("cotacoes").upload(arquivoPath, file, { contentType: file.type || "application/octet-stream" });
+      if (upErr) throw upErr;
+    }
+
     const observacoes = form.obs.value.trim() || null;
+    const diasPag = form.dias_pagamento?.value ? Number(form.dias_pagamento.value) : null;
 
-    const { data: cotacao, error } = await supabase
+    const { error } = await supabase
       .from("cotacoes")
-      .insert({ pedido_id: pedidoId, fornecedor, valor: total, observacoes })
-      .select()
-      .single();
+      .insert({ pedido_id: pedidoId, fornecedor, valor, dias_pagamento: diasPag, observacoes, arquivo_path: arquivoPath });
     if (error) throw error;
-
-    const payload = itensPayload.map((i) => ({ ...i, cotacao_id: cotacao.id }));
-    const { error: e2 } = await supabase.from("cotacao_itens").insert(payload);
-    if (e2) throw e2;
 
     toast(`Cotação de ${fornecedor} salva.`);
     render(container, profile);
@@ -455,18 +504,119 @@ async function removerCotacao(id) {
   render(container, profile);
 }
 
+async function editarCotacao(id) {
+  let c, pedido;
+  for (const p of pendentes) {
+    const found = p.cotacoes.find((x) => x.id === id);
+    if (found) { c = found; pedido = p; break; }
+  }
+  if (!c) return toast("Cotação não encontrada.", "error");
+
+  const html = `
+    <form id="form-editar-cotacao" class="modal-form">
+      <label>Distribuidora
+        <input name="fornecedor" value="${esc(c.fornecedor)}" required />
+      </label>
+      <label>Valor final (R$)
+        <input name="valor" type="number" step="0.01" min="0" value="${c.valor}" required />
+      </label>
+      <label>Dias para pagar
+        <input name="dias_pagamento" type="number" min="0" value="${c.dias_pagamento ?? ""}" />
+      </label>
+      <label>Arquivo da cotação (PDF/IMG, máx. 5MB)
+        <input name="arquivo" type="file" accept=".pdf,.png,.jpg,.jpeg" />
+        ${c.arquivo_path ? `<p class="muted">Arquivo atual: <button type="button" class="btn-link" data-arquivo-cot="${esc(c.arquivo_path)}">Ver orçamento</button></p>` : ""}
+      </label>
+      <label>Observações
+        <textarea name="obs" rows="3">${esc(c.observacoes || "")}</textarea>
+      </label>
+      <div class="modal-actions">
+        <button type="button" class="btn-link" data-cancel>Cancelar</button>
+        <button type="submit" class="btn btn-ok">Salvar</button>
+      </div>
+    </form>
+  `;
+  const overlay = modalContent("Editar cotação", html);
+  overlay.querySelector("[data-cancel]")?.addEventListener("click", () => overlay.remove());
+  overlay.querySelector("[data-arquivo-cot]")?.addEventListener("click", (e) => { e.preventDefault(); abrirArquivoCotacao(c.arquivo_path); });
+  overlay.querySelector("#form-editar-cotacao").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const ok = await salvarCotacao(e.target, c, pedido);
+    if (ok) overlay.remove();
+  });
+}
+
+async function salvarCotacao(form, c, pedido) {
+  const fornecedor = form.fornecedor.value.trim();
+  if (!fornecedor) return toast("Informe a distribuidora.", "error"), false;
+
+  const valor = Number(form.valor.value);
+  if (!valor || valor <= 0) return toast("Informe o valor final da cotação.", "error"), false;
+
+  try {
+    if (!fornecedoresErro && !fornecedores.some((f) => f.nome.toLowerCase() === fornecedor.toLowerCase())) {
+      await supabase.from("fornecedores").insert({ nome: fornecedor, ativo: true });
+    }
+
+    let arquivoPath = c.arquivo_path;
+    const file = form.arquivo.files[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) return toast("O arquivo deve ter no máximo 5MB.", "error"), false;
+      const ext = file.name.split(".").pop().toLowerCase();
+      arquivoPath = `${c.pedido_id}/${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage.from("cotacoes").upload(arquivoPath, file, { contentType: file.type || "application/octet-stream" });
+      if (upErr) throw upErr;
+    }
+
+    const observacoes = form.obs.value.trim() || null;
+    const diasPag = form.dias_pagamento?.value ? Number(form.dias_pagamento.value) : null;
+
+    const { error } = await supabase
+      .from("cotacoes")
+      .update({ fornecedor, valor, dias_pagamento: diasPag, observacoes, arquivo_path: arquivoPath })
+      .eq("id", c.id);
+    if (error) throw error;
+
+    if (pedido && pedido.cotacao_escolhida === c.id) {
+      await supabase.from("pedidos").update({
+        fornecedor,
+        valor_estimado: valor,
+        dias_pagamento: diasPag,
+      }).eq("id", c.pedido_id);
+    }
+
+    toast(`Cotação de ${fornecedor} atualizada.`);
+    render(container, profile);
+    return true;
+  } catch (err) {
+    toast("Erro: " + err.message, "error");
+    return false;
+  }
+}
+
 async function enviar(pedidoId) {
   const pedido = pendentes.find((p) => p.id === pedidoId);
   if (!pedido.cotacoes.length) return toast("Adicione ao menos uma cotação.", "error");
-  const obsEl = container.querySelector(`[data-obs="${pedidoId}"]`);
-  const obs = obsEl?.value.trim() || null;
+  const pagarApos = container.querySelector(`[data-pagar-apos="${pedidoId}"]`)?.checked || false;
+  const numSol = container.querySelector(`[data-num-sol="${pedidoId}"]`)?.value.trim() || null;
+  const tipo = container.querySelector(`[data-tipo="${pedidoId}"]`)?.value.trim() || null;
+  const centroCusto = container.querySelector(`[data-centro-custo="${pedidoId}"]`)?.value.trim() || null;
+  const justificativaCompra = container.querySelector(`[data-justificativa-compra="${pedidoId}"]`)?.value.trim() || null;
+  if (!numSol) return toast("Preencha o Nº da solicitação antes de enviar.", "error");
   const ok = await confirmDialog(
     "Enviar para Diretoria",
-    `Tem certeza que deseja enviar o pedido #${pedido.numero} à Diretoria?`
+    `Tem certeza que deseja enviar o pedido #${pedido.numero} à Diretoria?${pagarApos ? "\n\nEste pedido será recebido antes de ser pago." : ""}`
   );
   if (!ok) return;
   try {
-    await updatePedido(pedido, { comprador_id: profile.id, obs_compras: obs }, "aguardando_diretoria", profile.id);
+    await updatePedido(pedido, {
+      comprador_id: profile.id,
+      pagar_apos: pagarApos,
+      numero_solicitacao: numSol,
+      tipo,
+      centro_custo: centroCusto,
+      justificativa_compra: justificativaCompra,
+    }, "aguardando_diretoria", profile.id);
     toast(`Pedido #${pedido.numero} enviado para a Diretoria.`);
     render(container, profile);
   } catch (err) {
@@ -504,17 +654,21 @@ async function enviarPagamento(e, pedidoId) {
   }
 
   try {
-    await updatePedido(pedido, patch, "aguardando_pagamento", profile.id, `Pagamento: ${forma}`);
-    toast(`Pedido #${pedido.numero} enviado ao Financeiro.`);
+    const novoStatus = pedido.pagar_apos ? "aguardando_recebimento" : "aguardando_pagamento";
+    await updatePedido(pedido, patch, novoStatus, profile.id, `Pagamento: ${forma}`);
+    toast(`Pedido #${pedido.numero} enviado para ${pedido.pagar_apos ? "Estoque (receber antes de pagar)" : "Financeiro (pagar antes de receber)"}.`);
     render(container, profile);
   } catch (err) {
     toast("Erro: " + err.message, "error");
   }
 }
 
-async function conferirPedido(id) {
+async function conferirPedido(e, id) {
+  e?.preventDefault();
   const pedido = aConferir.find((p) => p.id === id);
-  if (!pedido || pedido.status !== "recebido") return;
+  if (!pedido || !["pago", "recebido"].includes(pedido.status)) return;
+  const podeConferir = (pedido.pagar_apos && pedido.status === "pago") || (!pedido.pagar_apos && pedido.status === "recebido");
+  if (!podeConferir) return toast("Este pedido ainda não pode ser entregue.", "error");
 
   const itensVinculados = (pedido.pedido_itens || []).filter((i) => i.produto_id);
   const aviso = itensVinculados.length
@@ -522,8 +676,8 @@ async function conferirPedido(id) {
     : "Nenhum item vinculado a produtos.";
 
   const ok = await confirmDialog(
-    "Conferir recebimento",
-    `Confirmar o pedido #${pedido.numero}? ${aviso}`
+    "Confirmar entrega ao setor",
+    `Confirmar a entrega do pedido #${pedido.numero} ao setor ${pedido.criador?.setor || "-"}? ${aviso}`
   );
   if (!ok) return;
 
@@ -536,18 +690,12 @@ async function conferirPedido(id) {
       if (error) throw error;
     }
 
-    const { error } = await supabase.from("pedidos").update({
-      status: "conferido",
+    await updatePedido(pedido, {
       conferido_por: profile.id,
       data_conferencia: new Date().toISOString(),
-    }).eq("id", pedido.id);
-    if (error) throw error;
+    }, "concluido", profile.id, "Entregue");
 
-    await supabase.from("historico").insert({
-      pedido_id: pedido.id, de_status: "recebido", para_status: "conferido", usuario_id: profile.id,
-    });
-
-    toast(`Pedido #${pedido.numero} conferido e baixado do estoque.`);
+    toast(`Pedido #${pedido.numero} entregue ao setor e baixado do estoque.`);
     render(container, profile);
   } catch (err) {
     toast("Erro: " + err.message, "error");
@@ -561,45 +709,61 @@ async function retirarItem(chave) {
   const item = (pedido.pedido_itens || []).find((i) => i.id === itemId);
   if (!item) return;
 
-  if ((pedido.pedido_itens || []).length <= 1) {
-    return toast("Não é possível retirar o último item. Para cancelar a requisição, contate o administrador.", "error");
+  const ehUltimoItem = (pedido.pedido_itens || []).length <= 1;
+  const produto = produtos.find((x) => x.id === item.produto_id);
+  const estoque = produto ? Number(produto.quantidade_atual || 0) : 0;
+  const qtdAtual = Number(item.quantidade || 0);
+
+  const v = await modalForm(
+    `Retirar "${item.descricao}" do pedido`,
+    [{
+      name: "quantidade",
+      label: `Quantidade a retirar (${produto ? `disponível em estoque: ${estoque} · ` : ""}pedido: ${qtdAtual})`,
+      type: "number",
+      min: 1,
+      max: qtdAtual,
+      value: produto ? Math.min(qtdAtual, estoque || qtdAtual) : qtdAtual,
+      required: true,
+    }],
+    "Retirar"
+  );
+  if (!v) return;
+  const retirada = Math.max(1, Math.min(qtdAtual, Number(v.quantidade) || 0));
+  if (retirada <= 0) return;
+
+  if (retirada >= qtdAtual && ehUltimoItem) {
+    return toast("Não é possível remover totalmente o último item. Reduza a quantidade ou contate o administrador para cancelar a requisição.", "error");
   }
 
-  const ok = await confirmDialog(
-    "Retirar item do pedido",
-    `Tem certeza que deseja retirar "${item.descricao}" do pedido #${pedido.numero}?`
-  );
-  if (!ok) return;
+  // Se o item está vinculado a um produto, dá baixa no estoque das unidades
+  // retiradas (elas serão atendidas pelo estoque, não compradas).
+  const baixaEstoque = produto ? Math.min(retirada, estoque) : 0;
+  if (produto && baixaEstoque < retirada) {
+    const ok = await confirmDialog(
+      "Estoque insuficiente",
+      `Só há ${estoque} em estoque, mas você está retirando ${retirada}. Serão baixadas ${baixaEstoque} do estoque. Continuar?`
+    );
+    if (!ok) return;
+  }
 
   try {
-    // Remove os valores unitários do item em cada cotação existente
-    const cotaAfetadas = (pedido.cotacoes || []).filter((c) =>
-      (c.itens || []).some((ci) => ci.pedido_item_id === itemId)
-    );
-
-    for (const c of cotaAfetadas) {
-      const ci = (c.itens || []).find((x) => x.pedido_item_id === itemId);
-      if (ci) {
-        const { error: e1 } = await supabase.from("cotacao_itens").delete().eq("id", ci.id);
-        if (e1) throw e1;
-      }
-      // Recalcula o total da cotação sem o item removido
-      const total = (c.itens || [])
-        .filter((x) => x.pedido_item_id !== itemId)
-        .reduce((s, ci) => {
-          const pi = (pedido.pedido_itens || []).find((i) => i.id === ci.pedido_item_id && i.id !== itemId);
-          if (!pi) return s;
-          return s + (Number(pi.quantidade) || 0) * (Number(ci.valor_unitario) || 0);
-        }, 0);
-      const { error: e2 } = await supabase.from("cotacoes").update({ valor: total }).eq("id", c.id);
-      if (e2) throw e2;
+    if (produto && baixaEstoque > 0) {
+      const nova = Math.max(0, estoque - baixaEstoque);
+      const { error: e1 } = await supabase.from("produtos").update({ quantidade_atual: nova }).eq("id", produto.id);
+      if (e1) throw e1;
     }
 
-    // Remove o item do pedido
-    const { error } = await supabase.from("pedido_itens").delete().eq("id", itemId);
-    if (error) throw error;
-
-    toast(`"${item.descricao}" retirado do pedido #${pedido.numero}.`);
+    if (retirada >= qtdAtual) {
+      const { error } = await supabase.from("pedido_itens").delete().eq("id", itemId);
+      if (error) throw error;
+      toast(`"${item.descricao}" retirado do pedido #${pedido.numero}.${baixaEstoque ? ` ${baixaEstoque} baixado(s) do estoque.` : ""}`);
+    } else {
+      const novaQtd = qtdAtual - retirada;
+      const retiradaTotal = Number(item.quantidade_retirada || 0) + baixaEstoque;
+      const { error } = await supabase.from("pedido_itens").update({ quantidade: novaQtd, quantidade_retirada: retiradaTotal }).eq("id", itemId);
+      if (error) throw error;
+      toast(`Retirada ${retirada} unidade(s) de "${item.descricao}". Novo total no pedido: ${novaQtd}.${baixaEstoque ? ` ${baixaEstoque} baixado(s) do estoque.` : ""}`);
+    }
     render(container, profile);
   } catch (err) {
     toast("Erro: " + err.message, "error");
@@ -623,9 +787,12 @@ async function atenderDoEstoque(id) {
     for (const item of itens) {
       const produto = produtos.find((x) => x.id === item.produto_id);
       const atual = Number(produto?.quantidade_atual || 0);
-      const nova = Math.max(0, atual - Number(item.quantidade || 0));
+      const qtd = Number(item.quantidade || 0);
+      const nova = Math.max(0, atual - qtd);
       const { error } = await supabase.from("produtos").update({ quantidade_atual: nova }).eq("id", item.produto_id);
       if (error) throw error;
+      const retirado = Number(item.quantidade_retirada || 0) + qtd;
+      await supabase.from("pedido_itens").update({ quantidade_retirada: retirado }).eq("id", item.id);
     }
 
     const { error } = await supabase.from("pedidos").update({
@@ -742,21 +909,18 @@ function verFornecedor(nome) {
         const cots = (p.cotacoes || []).filter((c) => c.fornecedor === nome);
         const escolhida = p.fornecedor === nome ? ` <span class="badge badge-aprovado">escolhido</span>` : "";
         const detalhes = cots.map((c) => {
-          const total = cotacaoTotal(c, p);
-          const linhas = (c.itens || []).map((ci) => {
-            const item = (p.pedido_itens || []).find((i) => i.id === ci.pedido_item_id);
-            if (!item) return "";
-            const sub = (Number(item.quantidade) || 0) * (Number(ci.valor_unitario) || 0);
-            return `<tr><td>${esc(item.descricao)}</td><td>${item.quantidade}</td><td>${fmtMoney(ci.valor_unitario)}</td><td>${fmtMoney(sub)}</td></tr>`;
-          }).join("");
+          const arquivoBtn = c.arquivo_path
+            ? ` <button class="btn-link" data-arquivo-cot="${esc(c.arquivo_path)}">Ver orçamento</button>`
+            : "";
           return `
-            <p style="margin:.4rem 0 0"><strong>Pedido #${p.numero}</strong> ${escolhida} — Total: ${fmtMoney(total)}</p>
-            <table class="table" style="margin:0 0 .6rem"><thead><tr><th>Item</th><th>Qtd</th><th>Unit.</th><th>Subtotal</th></tr></thead><tbody>${linhas}</tbody></table>`;
+            <p style="margin:.4rem 0 .6rem"><strong>Pedido #${p.numero}</strong> ${escolhida} — Valor: ${fmtMoney(c.valor)}${arquivoBtn}</p>`;
         }).join("");
         return `<div style="margin-bottom:.8rem">${detalhes}</div>`;
       }).join("")
     : `<p class="muted">Nenhuma cotação para este fornecedor.</p>`;
-  modalContent(`Cotações de ${nome}`, html, true);
+  const modal = modalContent(`Cotações de ${nome}`, html, true);
+  modal.querySelectorAll("[data-arquivo-cot]").forEach((b) =>
+    b.addEventListener("click", () => abrirArquivoCotacao(b.dataset.arquivoCot)));
 }
 
 async function editarFornecedor(id, nomeAtual) {

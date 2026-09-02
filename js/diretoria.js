@@ -6,6 +6,7 @@ import { esc, fmtDate, fmtMoney, statusBadge, toast, pageHeader, modalForm, moda
 import { fetchPedidos, updatePedido } from "./pedidos.js";
 
 let container, profile, pendentes = [], ajustesPendentes = [], pedidosDecididos = [];
+let produtos = [];
 let abaAtiva = "compras";
 
 function mostrarAba(nome) {
@@ -22,6 +23,8 @@ export async function render(el, prof, aba = "compras") {
   container = el;
   profile = prof;
   abaAtiva = aba;
+  const { data: prods } = await supabase.from("produtos").select("*").order("nome");
+  produtos = (prods || []).sort((a, b) => String(a.nome || "").localeCompare(b.nome || "", "pt-BR", { sensitivity: "base" }));
   pendentes = await fetchPedidos(["aguardando_diretoria"]);
   const todos = await fetchPedidos();
   ajustesPendentes = await carregarAjustesPendentes();
@@ -58,15 +61,19 @@ function draw(decididos) {
     <section class="card" data-sec="historico" style="display:none" id="sec-historico">
       <div class="card-head"><h3>Histórico de pedidos dos líderes</h3></div>
       <table class="table">
-        <thead><tr><th>#</th><th>Fornecedor</th><th>Valor</th><th>Status</th><th>Decidido em</th></tr></thead>
+        <thead><tr><th>#</th><th>Fornecedor</th><th>Valor</th><th>Status</th><th>Decidido em</th><th>Retirado do estoque</th></tr></thead>
         <tbody>
-          ${decididos.map((p) => `<tr data-detalhes="${p.id}" style="cursor:pointer">
-            <td>${p.numero}</td>
-            <td>${esc(p.fornecedor || "-")}</td>
-            <td>${fmtMoney(p.valor_estimado)}</td>
-            <td>${statusBadge(p.status)}</td>
-            <td>${fmtDate(p.data_decisao)}</td>
-          </tr>`).join("") || `<tr><td colspan="5" class="muted">Nada ainda.</td></tr>`}
+          ${decididos.map((p) => {
+            const totalRetirado = (p.pedido_itens || []).reduce((s, i) => s + Number(i.quantidade_retirada || 0), 0);
+            return `<tr data-detalhes="${p.id}" style="cursor:pointer">
+              <td>${p.numero}</td>
+              <td>${esc(p.fornecedor || "-")}</td>
+              <td>${fmtMoney(p.valor_estimado)}</td>
+              <td>${statusBadge(p.status)}</td>
+              <td>${fmtDate(p.data_decisao)}</td>
+              <td>${totalRetirado}</td>
+            </tr>`;
+          }).join("") || `<tr><td colspan="6" class="muted">Nada ainda.</td></tr>`}
         </tbody>
       </table>
     </section>
@@ -87,6 +94,8 @@ function draw(decididos) {
     b.addEventListener("click", () => rejeitarAjuste(b.dataset.rejeitarAjuste)));
   container.querySelectorAll("[data-detalhes]").forEach((r) =>
     r.addEventListener("click", () => verDetalhes(r.dataset.detalhes)));
+  container.querySelectorAll("[data-arquivo-cot]").forEach((b) =>
+    b.addEventListener("click", (e) => { e.preventDefault(); e.stopPropagation(); abrirArquivoCotacao(b.dataset.arquivoCot); }));
   container.querySelectorAll("[data-tab]").forEach((b) =>
     b.addEventListener("click", () => mostrarAba(b.dataset.tab)));
   mostrarAba(abaAtiva);
@@ -97,17 +106,39 @@ function verDetalhes(id) {
   const pedido = lista.find((p) => p.id === id);
   if (!pedido) return;
 
-  const itens = (pedido.pedido_itens || []).map((i) =>
-    `<li>${esc(i.descricao)} — ${Number(i.quantidade)}</li>`
-  ).join("") || "<li class='muted'>Nenhum item.</li>";
+  const itens = (pedido.pedido_itens || []).map((i) => {
+    const prod = produtos.find((x) => x.id === i.produto_id);
+    const un = esc(prod?.unidade || "");
+    const qtd = Number(i.quantidade);
+    const estoque = prod ? Number(prod.quantidade_atual || 0) : 0;
+    const retirado = Number(i.quantidade_retirada || 0);
+    const comprar = prod ? Math.max(0, qtd - estoque) : qtd;
+    const estoqueInfo = prod
+      ? ` <span class="muted">(retirado do estoque: ${retirado} ${un}, comprar: ${comprar} ${un})</span>`
+      : ` <span class="muted">(comprar: ${qtd} ${un})</span>`;
+    return `<li>${esc(i.descricao)} — cotação: ${qtd} ${un}${estoqueInfo}</li>`;
+  }).join("") || "<li class='muted'>Nenhum item.</li>";
+
+  const totalPedido = (pedido.pedido_itens || []).reduce((s, i) => {
+    const prod = produtos.find((x) => x.id === i.produto_id);
+    const qtd = Number(i.quantidade);
+    const estoque = prod ? Number(prod.quantidade_atual || 0) : 0;
+    const retirado = Number(i.quantidade_retirada || 0);
+    const comprar = prod ? Math.max(0, qtd - estoque) : qtd;
+    return s + retirado + comprar;
+  }, 0);
 
   const html = `
     <p><strong>Pedido:</strong> #${pedido.numero}</p>
     <p><strong>Solicitante:</strong> ${esc(pedido.criador?.nome || "-")} (${esc(pedido.criador?.setor || "-")})</p>
     <p><strong>Fornecedor:</strong> ${esc(pedido.fornecedor || "-")}</p>
-    <p><strong>Valor estimado:</strong> ${fmtMoney(pedido.valor_estimado)}</p>
+    <p><strong>Valor final:</strong> ${fmtMoney(pedido.valor_estimado)}</p>
+    <p><strong>Especificação:</strong> ${esc(pedido.tipo || "-")} · <strong>Nº solicitação:</strong> ${esc(pedido.numero_solicitacao || "-")} · <strong>Dias para pagar:</strong> ${pedido.dias_pagamento ?? "-"}</p>
+    <p><strong>Centro de Custo / Local de Faturamento:</strong> ${esc(pedido.centro_custo || "-")}</p>
+    ${pedido.justificativa_compra ? `<p><strong>Justificativa de Solicitação de Compra:</strong> ${esc(pedido.justificativa_compra)}</p>` : ""}
     <p><strong>Status:</strong> ${statusBadge(pedido.status)}</p>
     <p><strong>Decidido em:</strong> ${fmtDate(pedido.data_decisao)}</p>
+    <p><strong>Total do pedido:</strong> ${totalPedido} unidades</p>
     ${pedido.motivo_rejeicao ? `<p class="muted"><strong>Motivo da rejeição:</strong> ${esc(pedido.motivo_rejeicao)}</p>` : ""}
     <h4 style="margin:.8rem 0 .2rem">Itens</h4>
     <ul class="item-list">${itens}</ul>
@@ -115,36 +146,49 @@ function verDetalhes(id) {
   modalContent(`Detalhes do pedido #${pedido.numero}`, html);
 }
 
-function cotacaoTotal(c, p) {
-  return (c.itens || []).reduce((s, ci) => {
-    const item = (p.pedido_itens || []).find((i) => i.id === ci.pedido_item_id);
-    if (!item) return s;
-    return s + (Number(item.quantidade) || 0) * (Number(ci.valor_unitario) || 0);
-  }, 0);
-}
-
 function cardPedido(p) {
-  const cot = (p.cotacoes || []).slice().sort((a, b) => cotacaoTotal(a, p) - cotacaoTotal(b, p));
-  const menor = cot.length ? cotacaoTotal(cot[0], p) : null;
+  const cot = (p.cotacoes || []).slice().sort((a, b) => Number(a.valor || 0) - Number(b.valor || 0));
+  const menor = cot.length ? Number(cot[0].valor || 0) : null;
+
+  const totalPedido = (p.pedido_itens || []).reduce((s, i) => {
+    const prod = produtos.find((x) => x.id === i.produto_id);
+    const qtd = Number(i.quantidade);
+    const estoque = prod ? Number(prod.quantidade_atual || 0) : 0;
+    const retirado = Number(i.quantidade_retirada || 0);
+    const comprar = prod ? Math.max(0, qtd - estoque) : qtd;
+    return s + retirado + comprar;
+  }, 0);
+
+  const itensPedido = `<p><strong>Total do pedido:</strong> ${totalPedido} unidades</p>
+    <ul class="item-list">${(p.pedido_itens || []).map((i) => {
+    const prod = produtos.find((x) => x.id === i.produto_id);
+    const un = esc(prod?.unidade || "");
+    const qtd = Number(i.quantidade);
+    const estoque = prod ? Number(prod.quantidade_atual || 0) : 0;
+    const retirado = Number(i.quantidade_retirada || 0);
+    const comprar = prod ? Math.max(0, qtd - estoque) : qtd;
+    const estoqueInfo = prod
+      ? `<span class="muted"> — retirado do estoque: ${retirado} ${un}, comprar: ${comprar} ${un}</span>`
+      : `<span class="muted"> — comprar: ${qtd} ${un}</span>`;
+    return `<li>${esc(i.descricao)} — cotação: ${qtd} ${un}${estoqueInfo}</li>`;
+  }).join("")}</ul>`;
 
   const opcoes = cot.map((c, i) => {
-    const total = cotacaoTotal(c, p);
-    const linhas = (c.itens || []).map((ci) => {
-      const item = (p.pedido_itens || []).find((it) => it.id === ci.pedido_item_id);
-      if (!item) return "";
-      const sub = (Number(item.quantidade) || 0) * (Number(ci.valor_unitario) || 0);
-      return `<tr><td>${esc(item.descricao)}</td><td>${item.quantidade}</td><td>${fmtMoney(ci.valor_unitario)}</td><td>${fmtMoney(sub)}</td></tr>`;
-    }).join("");
-    const menorBadge = total === menor ? " <span class='badge badge-aprovado'>melhor preço</span>" : "";
-    const obs = c.observacoes ? `<div class="muted" style="margin:.3rem 0">Observações: ${esc(c.observacoes)}</div>` : "";
-    return `<label class="cotacao-opt" style="display:block; margin:.5rem 0; padding:.6rem; border:1px solid var(--border); border-radius:8px; cursor:pointer">
-      <input type="radio" name="cot-${p.id}" value="${c.id}" ${i === 0 ? "checked" : ""} />
-      <div style="display:inline-block; vertical-align:top; margin-left:.3rem">
-        <strong>${esc(c.fornecedor)}</strong> — Total: ${fmtMoney(total)}${menorBadge}
-        ${obs}
-        <table class="table" style="margin:.4rem 0 0"><thead><tr><th>Item</th><th>Qtd</th><th>Unit.</th><th>Subtotal</th></tr></thead><tbody>${linhas}</tbody></table>
+    const total = Number(c.valor || 0);
+    const menorBadge = total === menor ? " <span class='badge badge-aprovado'>menor valor</span>" : "";
+    const dias = c.dias_pagamento ? ` · ${c.dias_pagamento} dia(s) para pagar` : "";
+    const rid = `cot-${p.id}-${c.id}`;
+    const arquivoBtn = c.arquivo_path
+      ? `<button type="button" class="btn-link" data-arquivo-cot="${esc(c.arquivo_path)}">Ver orçamento</button>`
+      : `<span class="muted">(sem orçamento)</span>`;
+    return `<div class="cotacao-opt" style="display:flex; flex-direction:column; gap:.4rem; margin:.5rem 0; padding:.6rem; border:1px solid var(--border); border-radius:8px">
+      <div style="display:flex; align-items:center; gap:.6rem;">
+        <label for="${rid}" style="flex:1; margin:0; font-weight:400; cursor:pointer"><strong>${esc(c.fornecedor)}</strong> — Valor final: ${fmtMoney(total)}${menorBadge}${dias}</label>
+        ${arquivoBtn}
+        <input type="radio" id="${rid}" name="cot-${p.id}" value="${c.id}" ${i === 0 ? "checked" : ""} style="width:auto;flex:none;margin:0" />
       </div>
-    </label>`;
+      ${c.observacoes ? `<p class="muted" style="margin:0; font-size:.85rem">Obs: ${esc(c.observacoes)}</p>` : ""}
+    </div>`;
   }).join("");
 
   return `<div class="pedido-box">
@@ -152,7 +196,16 @@ function cardPedido(p) {
       <strong>Pedido #${p.numero}</strong> ${statusBadge(p.status)}
       <span class="muted"> · solicitado por ${esc(p.criador?.nome || "-")}${p.criador?.setor ? ` (${esc(p.criador.setor)})` : ""} · cotado por ${esc(p.comprador?.nome || "-")} em ${fmtDate(p.created_at)}</span>
     </div>
-    ${p.justificativa ? `<div class="muted">Justificativa: ${esc(p.justificativa)}</div>` : ""}
+    ${p.pagar_apos ? `<p class="muted" style="margin:.4rem 0"><strong>Receber antes de pagar</strong></p>` : ""}
+    <div class="muted" style="margin:.6rem 0; line-height:1.7">
+      <div><strong>Nº solicitação:</strong> ${esc(p.numero_solicitacao || "-")}</div>
+      <div><strong>Especificação de Compra:</strong> ${esc(p.tipo || "-")}</div>
+      <div><strong>Centro de Custo / Local de Faturamento:</strong> ${esc(p.centro_custo || "-")}</div>
+      <div><strong>Justificativa de Solicitação de Compra:</strong> ${esc(p.justificativa_compra || "-")}</div>
+    </div>
+
+    <h4 style="margin:.9rem 0 .3rem">Itens</h4>
+    ${itensPedido}
 
     <h4 style="margin:.9rem 0 .3rem">Cotações — escolha uma para aprovar</h4>
     ${opcoes}
@@ -186,6 +239,16 @@ function cardAjuste(a) {
   </div>`;
 }
 
+async function abrirArquivoCotacao(path) {
+  try {
+    const { data, error } = await supabase.storage.from("cotacoes").createSignedUrl(path, 120);
+    if (error) throw error;
+    window.open(data.signedUrl, "_blank");
+  } catch (err) {
+    toast("Não foi possível abrir o arquivo: " + err.message, "error");
+  }
+}
+
 async function aprovar(id) {
   const pedido = pendentes.find((p) => p.id === id);
   const sel = container.querySelector(`input[name="cot-${id}"]:checked`);
@@ -200,7 +263,8 @@ async function aprovar(id) {
       motivo_rejeicao: null,
       cotacao_escolhida: escolhida.id,
       fornecedor: escolhida.fornecedor,
-      valor_estimado: cotacaoTotal(escolhida, pedido),
+      valor_estimado: Number(escolhida.valor || 0),
+      dias_pagamento: escolhida.dias_pagamento ?? null,
     }, "aprovado", profile.id, `Aprovado: ${escolhida.fornecedor}`);
     toast(`Pedido #${pedido.numero} aprovado.`);
     render(container, profile);

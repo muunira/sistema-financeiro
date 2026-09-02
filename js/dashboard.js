@@ -12,7 +12,7 @@ export async function render(el, prof) {
   profile = prof;
   pedidos = await fetchPedidos();
   const { data } = await supabase.from("produtos").select("*").order("nome");
-  produtos = data || [];
+  produtos = (data || []).sort((a, b) => String(a.nome || "").localeCompare(b.nome || "", "pt-BR", { sensitivity: "base" }));
   draw();
 }
 

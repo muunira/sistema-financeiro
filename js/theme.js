@@ -7,12 +7,15 @@ const SOL = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke=
 const LUA = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>';
 
 export function getTheme() {
-  try { return localStorage.getItem(KEY) === "dark" ? "dark" : "light"; }
-  catch { return "light"; }
+  // Modo escuro é o padrão. Só respeita localStorage se o usuário tiver escolhido claro.
+  try {
+    const t = localStorage.getItem(KEY);
+    return t === "light" ? "light" : "dark";
+  } catch { return "dark"; }
 }
 
 export function applyTheme(t) {
-  document.documentElement.classList.toggle("theme-dark", t === "dark");
+  document.documentElement.classList.toggle("theme-light", t === "light");
 }
 
 // Atualiza o conteúdo (ícone + texto opcional) de um botão de tema

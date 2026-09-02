@@ -22,19 +22,18 @@ export async function render(el, prof, aba = "pagar") {
   container = el;
   profile = prof;
   abaAtiva = aba;
-  const aPagar = await fetchPedidos(["aguardando_pagamento"]);
+  const aPagar = await fetchPedidos(["aguardando_pagamento", "recebido"]);
   const todos = await fetchPedidos();
   draw(aPagar, todos);
 }
 
 const TITULO_FINANCEIRO = {
   pagar: "Aguardando pagamento",
-  relatorios: "Relatórios",
   realizados: "Pagamentos realizados",
 };
 
 function draw(aPagar, todos) {
-  const pagos = todos.filter((p) => p.status === "pago" || p.status === "recebido" || p.status === "conferido");
+  const pagos = todos.filter((p) => ["pago", "concluido"].includes(p.status));
   const totalPago = pagos.reduce((s, p) => s + Number(p.valor_pago || 0), 0);
   const titulo = TITULO_FINANCEIRO[abaAtiva] || "Financeiro";
   container.innerHTML = `
@@ -43,23 +42,6 @@ function draw(aPagar, todos) {
     <section class="card" data-sec="pagar" style="display:none">
       <div class="card-head"><h3>Aguardando pagamento (${aPagar.length})</h3></div>
       ${aPagar.map(cardPedido).join("") || `<p class="muted">Nenhum pedido aguardando pagamento.</p>`}
-    </section>
-
-    <section class="card" data-sec="relatorios" style="display:none">
-      <div class="card-head"><h3>Relatórios de pagamento (${aPagar.length})</h3></div>
-      <p class="muted">Pedidos aprovados aguardando pagamento.</p>
-      <table class="table">
-        <thead><tr><th>#</th><th>Fornecedor</th><th>Valor estimado</th><th>Forma</th><th>Aprovado em</th><th></th></tr></thead>
-        <tbody>
-          ${aPagar.map((p) => `<tr data-relatorio="${p.id}" style="cursor:pointer">
-            <td>${p.numero}</td><td>${esc(p.fornecedor || "-")}</td>
-            <td>${fmtMoney(p.valor_estimado)}</td>
-            <td>${esc(p.forma_pagamento || "-")}</td>
-            <td>${fmtDate(p.data_decisao)}</td>
-            <td><button class="btn-link" data-relatorio="${p.id}">Ver relatório</button></td>
-          </tr>`).join("") || `<tr><td colspan="6" class="muted">Nenhum relatório disponível.</td></tr>`}
-        </tbody>
-      </table>
     </section>
 
     <section class="card" data-sec="realizados" style="display:none">
@@ -133,10 +115,14 @@ function cardPedido(p) {
       <span class="muted"> · aprovado em ${fmtDate(p.data_decisao)}</span>
     </div>
     <div class="pedido-itens"><strong>Itens:</strong> ${esc(itensTexto(p))}</div>
+    <div><strong>Solicitante:</strong> ${esc(p.criador?.nome || "-")} (${esc(p.criador?.setor || "-")})</div>
     <div><strong>Fornecedor aprovado:</strong> ${esc(p.fornecedor || "-")} ·
          <strong>Valor aprovado:</strong> ${fmtMoney(p.valor_estimado)}</div>
     <div><strong>Forma de pagamento:</strong> ${esc(p.forma_pagamento || "-")}</div>
     ${detalhesPagamento(p)}
+    <div style="margin-top:.8rem">
+      <button type="button" class="btn" data-relatorio="${p.id}">Ver relatório de pagamento</button>
+    </div>
     <form data-pedido="${p.id}" class="inline-form" style="margin-top:.8rem">
       <label>Valor pago (R$)
         <input name="valor" type="number" step="0.01" min="0" value="${p.valor_estimado ?? ""}" required />
@@ -185,9 +171,13 @@ function verDetalhesPagamento(id) {
   ` : "";
   const html = `
     <p><strong>Pedido:</strong> #${p.numero}</p>
+    <p><strong>Nº solicitação:</strong> ${esc(p.numero_solicitacao || "-")}</p>
+    <p><strong>Especificação:</strong> ${esc(p.tipo || "-")}</p>
+    <p><strong>Centro de Custo / Local de Faturamento:</strong> ${esc(p.centro_custo || "-")}</p>
     <p><strong>Fornecedor:</strong> ${esc(p.fornecedor || "-")}</p>
     <p><strong>Valor pago:</strong> ${fmtMoney(p.valor_pago)}</p>
     <p><strong>Forma:</strong> ${esc(p.forma_pagamento || "-")}</p>
+    <p><strong>Dias para pagar:</strong> ${p.dias_pagamento ?? "-"}</p>
     <p><strong>Pago em:</strong> ${fmtDate(p.data_pagamento)}</p>
     <p><strong>Comprador:</strong> ${esc(p.comprador?.nome || "-")}</p>
     <p><strong>Solicitante:</strong> ${esc(p.criador?.nome || "-")} (${esc(p.criador?.setor || "-")})</p>
@@ -207,13 +197,9 @@ function verDetalhesPagamento(id) {
 }
 
 async function gerarRelatorio(p) {
-  const escolhida = p.cotacoes?.find((c) => c.id === p.cotacao_escolhida);
-  const itens = (p.pedido_itens || []).map((i) => {
-    const ci = escolhida?.itens?.find((x) => x.pedido_item_id === i.id);
-    const unit = ci ? Number(ci.valor_unitario || 0) : 0;
-    const sub = (Number(i.quantidade) || 0) * unit;
-    return `<tr><td>${esc(i.descricao)}</td><td>${Number(i.quantidade)}</td><td>${fmtMoney(unit)}</td><td>${fmtMoney(sub)}</td></tr>`;
-  }).join("");
+  const itens = (p.pedido_itens || []).map((i) =>
+    `<tr><td>${esc(i.descricao)}</td><td>${Number(i.quantidade)}</td></tr>`
+  ).join("");
   const total = fmtMoney(p.valor_estimado);
 
   const pagamento = p.forma_pagamento === "Boleto"
@@ -250,7 +236,10 @@ async function gerarRelatorio(p) {
   <h1>Relatório de Pagamento</h1>
   <div class="section">
     <p><strong>Pedido:</strong> #${p.numero}</p>
-    <p><strong>Solicitante:</strong> ${esc(p.criador?.nome || "-")}</p>
+    <p><strong>Nº solicitação:</strong> ${esc(p.numero_solicitacao || "-")}</p>
+    <p><strong>Especificação:</strong> ${esc(p.tipo || "-")}</p>
+    <p><strong>Centro de Custo / Local de Faturamento:</strong> ${esc(p.centro_custo || "-")}</p>
+    <p><strong>Solicitante:</strong> ${esc(p.criador?.nome || "-")} (${esc(p.criador?.setor || "-")})</p>
     <p><strong>Comprador:</strong> ${esc(p.comprador?.nome || "-")}</p>
     <p><strong>Aprovado por</strong> ${esc(p.aprovador?.nome || "-")} <strong>em</strong> ${fmtDate(p.data_decisao)}</p>
   </div>
@@ -259,13 +248,15 @@ async function gerarRelatorio(p) {
     <h2>Fornecedor escolhido</h2>
     <p><strong>Nome:</strong> ${esc(p.fornecedor || "-")}</p>
     <p><strong>Forma de pagamento:</strong> ${esc(p.forma_pagamento || "-")}</p>
+    <p><strong>Dias para pagar:</strong> ${p.dias_pagamento ?? "-"}</p>
+    <p><strong>Valor final:</strong> ${total}</p>
     ${pagamento}
   </div>
 
   <div class="section">
-    <h2>Itens cotados</h2>
+    <h2>Itens</h2>
     <table>
-      <thead><tr><th>Item</th><th>Qtd</th><th>Valor unitário</th><th>Subtotal</th></tr></thead>
+      <thead><tr><th>Item</th><th>Qtd</th></tr></thead>
       <tbody>${itens}</tbody>
     </table>
     <p class="total">Total: ${total}</p>
@@ -301,12 +292,13 @@ async function pagar(e, id) {
       .upload(path, file, { contentType: file.type || "application/octet-stream" });
     if (upErr) throw upErr;
 
+    const novoStatus = pedido.status === "concluido" ? "concluido" : "pago";
     await updatePedido(pedido, {
       pago_por: profile.id,
       data_pagamento: new Date().toISOString(),
       valor_pago: Number(f.valor.value),
       comprovante_path: path,
-    }, "pago", profile.id, `Comprovante: ${path}`);
+    }, novoStatus, profile.id, `Comprovante: ${path}`);
 
     toast(`Pagamento do pedido #${pedido.numero} registrado.`);
     render(container, profile);

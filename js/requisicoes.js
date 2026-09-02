@@ -40,7 +40,7 @@ async function loadSolicitacoes() {
 async function loadProdutos() {
   const { data, error } = await supabase.from("produtos").select("*").order("nome");
   if (error) throw error;
-  produtos = data || [];
+  produtos = (data || []).sort((a, b) => String(a.nome || "").localeCompare(b.nome || "", "pt-BR", { sensitivity: "base" }));
 }
 
 async function loadMinhasRequisicoes() {
@@ -78,7 +78,10 @@ function draw(requisicoes) {
       <form id="form-requisicao">
         <div id="itens-requisicao"></div>
         <button type="button" class="btn btn-outline" id="add-item" style="margin-bottom:1rem">+ Adicionar item</button>
-        <label>Justificativa (caso tenha algo fora do padrão, sendo item ou quantidade)
+        <label>Justificativa de Solicitação de Compra
+          <textarea id="justificativa-compra" rows="2" placeholder="Descreva o motivo da compra" required></textarea>
+        </label>
+        <label>Observações (opcional)
           <textarea id="justificativa" rows="2" placeholder="Ex.: item diferente do cadastro, quantidade maior que o padrão..."></textarea>
         </label>
         <button type="submit" class="btn">Enviar requisição para Compras</button>
@@ -139,7 +142,8 @@ function verDetalhes(id) {
     <p><strong>Número:</strong> #${p.numero}</p>
     <p><strong>Status:</strong> ${statusBadge(p.status)}</p>
     <p><strong>Criada em:</strong> ${fmtDate(p.created_at)}</p>
-    <p><strong>Justificativa:</strong> ${esc(p.justificativa || "-")}</p>
+    <p><strong>Justificativa de Solicitação de Compra:</strong> ${esc(p.justificativa_compra || "-")}</p>
+    <p><strong>Observações:</strong> ${esc(p.justificativa || "-")}</p>
     <h4 style="margin:.8rem 0 .2rem">Itens</h4>
     <ul class="item-list">${itens}</ul>
   `;
@@ -226,12 +230,15 @@ async function enviarRequisicao(e) {
 
   if (!itens.length) return toast("Adicione pelo menos um item.", "error");
 
+  const justificativaCompra = container.querySelector("#justificativa-compra").value.trim();
+  if (!justificativaCompra) return toast("Preencha a Justificativa de Solicitação de Compra.", "error");
   const justificativa = container.querySelector("#justificativa").value.trim() || null;
 
   const { data: pedido, error } = await supabase
     .from("pedidos")
     .insert({
       criado_por: profile.id,
+      justificativa_compra: justificativaCompra,
       justificativa,
       status: "solicitado",
     })

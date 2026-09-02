@@ -67,6 +67,7 @@ export function modalForm(title, fields, submitLabel = "Salvar") {
       }
       const extra = [
         f.min != null ? `min="${f.min}"` : "",
+        f.max != null ? `max="${f.max}"` : "",
         f.step != null ? `step="${f.step}"` : "",
       ].join(" ");
       return `<label>${esc(f.label)}<input name="${f.name}" type="${f.type || "text"}" value="${esc(f.value ?? "")}" ${extra} ${req} /></label>`;

@@ -16,7 +16,9 @@ import * as admin from "./admin.js";
 import * as conta from "./conta.js";
 import * as dashboard from "./dashboard.js";
 import * as relatorio from "./relatorio.js";
+import * as relatoriosMensais from "./relatorios_mensais.js";
 import * as auditoria from "./auditoria.js";
+import * as zerarPedidos from "./zerar_pedidos.js";
 
 const TODOS = ["admin", "lider", "estoque", "compras", "diretoria", "financeiro"];
 
@@ -29,8 +31,10 @@ const ICONS = {
   diretoria: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>',
   financeiro:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>',
   relatorio: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h2v4H8zM14 11h2v6h-2z"/></svg>',
+  rel_mensal: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
   auditoria: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8M16 17H8M10 9H8"/></svg>',
   usuarios:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+  zerar_pedidos: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>',
   conta:     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
 
   // Líder
@@ -58,39 +62,39 @@ const ICONS = {
 
   // Financeiro
   fin_pagar:      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>',
-  fin_relatorios: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h2v4H8zM14 11h2v6h-2z"/></svg>',
   fin_realizados: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>',
 };
 
 // Definição das telas: id -> { label, roles permitidos, render }
 const VIEWS = {
   // Líder
-  req_nova:       { label: "Nova requisição",              group: "Líderes",    roles: ["lider", "admin"],                        render: (el, prof) => requisicoes.render(el, prof, "nova") },
-  req_historico:  { label: "Histórico de requisições",     group: "Líderes",    roles: ["lider", "admin"],                        render: (el, prof) => requisicoes.render(el, prof, "historico") },
-  req_produtos:   { label: "Itens solicitados para cadastro", group: "Líderes", roles: ["lider", "admin"],                     render: (el, prof) => requisicoes.render(el, prof, "produtos") },
+  req_nova:       { label: "Nova requisição",              group: "Requisições", roles: ["lider", "estoque", "compras", "estoque_compras", "admin"], render: (el, prof) => requisicoes.render(el, prof, "nova") },
+  req_historico:  { label: "Histórico de requisições",     group: "Requisições", roles: ["lider", "estoque", "compras", "estoque_compras", "admin"], render: (el, prof) => requisicoes.render(el, prof, "historico") },
+  req_produtos:   { label: "Itens solicitados para cadastro", group: "Requisições", roles: ["lider", "estoque", "compras", "estoque_compras", "admin"], render: (el, prof) => requisicoes.render(el, prof, "produtos") },
 
   // Estoque/Compras
-  est_produtos:   { label: "Estoque",                      group: "Compras / Estoque", roles: ["estoque", "compras", "estoque_compras", "admin"], render: (el, prof) => estoque.render(el, prof, "produtos") },
+  est_produtos:   { label: "Estoque",                      group: "Compras / Estoque", roles: ["estoque", "compras", "estoque_compras", "diretoria", "admin"], render: (el, prof) => estoque.render(el, prof, "produtos") },
   comp_solicitacoes: { label: "Solicitações de novos produtos", group: "Compras / Estoque", roles: ["estoque", "compras", "estoque_compras", "admin"], render: (el, prof) => compras.render(el, prof, "solicitacoes") },
   comp_cotar:     { label: "Pedidos a cotar",              group: "Compras / Estoque", roles: ["estoque", "compras", "estoque_compras", "admin"], render: (el, prof) => compras.render(el, prof, "cotar") },
   comp_aprovados: { label: "Aprovados (preencher pagamento)", group: "Compras / Estoque", roles: ["estoque", "compras", "estoque_compras", "admin"], render: (el, prof) => compras.render(el, prof, "pagar") },
-  est_recebimento:{ label: "Aguardando recebimento",       group: "Compras / Estoque", roles: ["estoque", "compras", "estoque_compras", "admin"], render: (el, prof) => estoque.render(el, prof, "recebimento") },
-  comp_conferir:  { label: "Confirmar entrega de requisições", group: "Compras / Estoque", roles: ["estoque", "compras", "estoque_compras", "admin"], render: (el, prof) => compras.render(el, prof, "conferir") },
-   comp_historico: { label: "Histórico de requisições",     group: "Compras / Estoque", roles: ["estoque", "compras", "estoque_compras", "admin"], render: (el, prof) => compras.render(el, prof, "historico") },
-  est_ajustes:    { label: "Ajustes manuais de estoque",   group: "Compras / Estoque", roles: ["estoque", "compras", "estoque_compras", "admin"], render: (el, prof) => estoque.render(el, prof, "ajustes") },
+  est_recebimento:{ label: "Aguardando recebimento",       group: "Compras / Estoque", roles: ["estoque", "compras", "estoque_compras", "diretoria", "admin"], render: (el, prof) => estoque.render(el, prof, "recebimento") },
+  comp_conferir:  { label: "Confirmar entrega aos setores", group: "Compras / Estoque", roles: ["estoque", "compras", "estoque_compras", "admin"], render: (el, prof) => compras.render(el, prof, "conferir") },
+  comp_historico: { label: "Histórico de requisições",     group: "Compras / Estoque", roles: ["estoque", "compras", "estoque_compras", "admin"], render: (el, prof) => compras.render(el, prof, "historico") },
+  est_ajustes:    { label: "Ajustes manuais de estoque",   group: "Compras / Estoque", roles: ["estoque", "compras", "estoque_compras", "diretoria", "admin"], render: (el, prof) => estoque.render(el, prof, "ajustes") },
   comp_fornecedores:{ label: "Lista de fornecedores",     group: "Compras / Estoque", roles: ["estoque", "compras", "estoque_compras", "admin"], render: (el, prof) => compras.render(el, prof, "fornecedores") },
 
   // Diretoria
   dir_cotacoes:   { label: "Cotações para aprovar",        group: "Diretoria",  roles: ["diretoria", "admin"],                       render: (el, prof) => diretoria.render(el, prof, "compras") },
   dir_historico:  { label: "Histórico de pedidos dos líderes", group: "Diretoria", roles: ["diretoria", "admin"],                    render: (el, prof) => diretoria.render(el, prof, "historico") },
   dir_ajustes:    { label: "Ajustes manuais de estoque",   group: "Diretoria",  roles: ["diretoria", "admin"],                       render: (el, prof) => diretoria.render(el, prof, "ajustes") },
+  rel_mensal:     { label: "Relatórios Mensais",           group: "Diretoria",  roles: ["diretoria", "admin"],                       render: relatoriosMensais.render },
   auditoria:      { label: "Registros de Auditoria",       group: "Diretoria",  roles: ["diretoria", "admin"],                       render: auditoria.render },
 
   // Financeiro
   fin_pagar:      { label: "Aguardando pagamento",         group: "Financeiro", roles: ["financeiro", "admin"],                      render: (el, prof) => financeiro.render(el, prof, "pagar") },
-  fin_relatorios: { label: "Relatórios",                   group: "Financeiro", roles: ["financeiro", "admin"],                      render: (el, prof) => financeiro.render(el, prof, "relatorios") },
   fin_realizados: { label: "Pagamentos realizados",        group: "Financeiro", roles: ["financeiro", "admin"],                      render: (el, prof) => financeiro.render(el, prof, "realizados") },
   usuarios:       { label: "Usuários",                     group: "Admin",      roles: ["admin", "diretoria", "financeiro"],         render: admin.render },
+  zerar_pedidos:  { label: "Zerar pedidos",                group: "Admin",      roles: ["admin"],                                      render: zerarPedidos.render },
 
   // Geral
   dashboard:      { label: "Dashboard",                    group: "Admin",      roles: ["admin"],                                      render: dashboard.render },
@@ -100,7 +104,45 @@ const VIEWS = {
 let profile = null;
 
 function availableViews() {
-  return Object.entries(VIEWS).filter(([, v]) => v.roles.includes(profile.role));
+  let views = Object.entries(VIEWS).filter(([, v]) => v.roles.includes(profile.role));
+
+  // Move "Cotações para aprovar" para o início do grupo Diretoria
+  const idx = views.findIndex(([id]) => id === "dir_cotacoes");
+  if (idx > 0) {
+    const targetIdx = views.findIndex(([, v]) => v.group === "Diretoria");
+    if (targetIdx >= 0) {
+      const [item] = views.splice(idx, 1);
+      views.splice(targetIdx, 0, item);
+    }
+  }
+
+  // Para diretoria, prioriza o grupo Diretoria no topo do menu
+  if (profile.role === "diretoria") {
+    const diretoriaViews = views.filter(([, v]) => v.group === "Diretoria");
+    const otherViews = views.filter(([, v]) => v.group !== "Diretoria");
+    views = [...diretoriaViews, ...otherViews];
+  }
+
+  // Para estoque/compras, prioriza o grupo Compras / Estoque no topo,
+  // com Pedidos a cotar e Aprovados em primeiro e segundo lugar
+  if (["estoque", "compras", "estoque_compras"].includes(profile.role)) {
+    const comprasGroup = "Compras / Estoque";
+    const ordem = ["comp_cotar", "comp_aprovados"];
+    const comprasViews = views
+      .filter(([, v]) => v.group === comprasGroup)
+      .sort((a, b) => {
+        const ia = ordem.indexOf(a[0]);
+        const ib = ordem.indexOf(b[0]);
+        if (ia !== -1 && ib !== -1) return ia - ib;
+        if (ia !== -1) return -1;
+        if (ib !== -1) return 1;
+        return 0;
+      });
+    const otherViews = views.filter(([, v]) => v.group !== comprasGroup);
+    views = [...comprasViews, ...otherViews];
+  }
+
+  return views;
 }
 
 function iniciais(nome) {
@@ -156,17 +198,17 @@ async function contar(tabela, filtro = {}) {
 
 async function atualizarBadges() {
   const map = {};
-  if (profile.role === "lider" || profile.role === "admin") {
+  if (["lider", "estoque", "compras", "estoque_compras", "admin"].includes(profile.role)) {
     map["req_historico"] = contar("pedidos", { criado_por: profile.id });
     map["req_produtos"] = supabase.from("solicitacoes_produto").select("id", { count: "exact", head: true }).eq("solicitante_id", profile.id).eq("status", "pendente").then(({ count }) => count || 0);
   }
-  if (["estoque", "compras", "estoque_compras", "admin"].includes(profile.role)) {
+  if (["estoque", "compras", "estoque_compras", "diretoria", "admin"].includes(profile.role)) {
     map["est_produtos"] = contar("produtos");
-    map["est_recebimento"] = contar("pedidos", { status: "pago" });
+    map["est_recebimento"] = supabase.from("pedidos").select("id", { count: "exact", head: true }).in("status", ["pago", "aguardando_recebimento"]).then(({ count }) => count || 0);
     map["est_ajustes"] = contar("ajustes_estoque", { status: "pendente" });
     map["comp_cotar"] = supabase.from("pedidos").select("id", { count: "exact", head: true }).in("status", ["solicitado", "em_cotacao"]).then(({ count }) => count || 0);
     map["comp_aprovados"] = contar("pedidos", { status: "aprovado" });
-    map["comp_conferir"] = contar("pedidos", { status: "recebido" });
+    map["comp_conferir"] = supabase.from("pedidos").select("id", { count: "exact", head: true }).in("status", ["pago", "recebido"]).then(({ count }) => count || 0);
     map["comp_solicitacoes"] = contar("solicitacoes_produto", { status: "pendente" });
   }
   if (["diretoria", "admin"].includes(profile.role)) {
@@ -174,8 +216,8 @@ async function atualizarBadges() {
     map["dir_ajustes"] = contar("ajustes_estoque", { status: "pendente" });
   }
   if (["financeiro", "admin"].includes(profile.role)) {
-    map["fin_pagar"] = contar("pedidos", { status: "aguardando_pagamento" });
-    map["fin_realizados"] = contar("pedidos", { status: "pago" });
+    map["fin_pagar"] = supabase.from("pedidos").select("id", { count: "exact", head: true }).in("status", ["aguardando_pagamento", "recebido"]).then(({ count }) => count || 0);
+    map["fin_realizados"] = supabase.from("pedidos").select("id", { count: "exact", head: true }).in("status", ["pago", "concluido"]).then(({ count }) => count || 0);
   }
 
   for (const [id, prom] of Object.entries(map)) {

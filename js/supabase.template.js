@@ -60,8 +60,10 @@ export const STATUS_LABELS = {
   aguardando_diretoria: "Pendente, aguardando Diretoria",
   aprovado: "Aprovado, aguardando Compras",
   aguardando_pagamento: "Pendente, aguardando Financeiro",
+  aguardando_recebimento: "Aprovado, aguardando Estoque (pagar depois)",
   rejeitado: "Rejeitado",
-  pago: "Pago, aguardando Estoque",
-  recebido: "Recebido, aguardando Estoque",
+  pago: "Pago, aguardando entrega",
+  recebido: "Recebido, aguardando Financeiro",
   conferido: "Conferido",
+  concluido: "Concluído",
 };

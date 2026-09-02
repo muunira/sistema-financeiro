@@ -3,8 +3,7 @@
 // =====================================================================
 import { supabase } from "./supabase.js";
 
-// Carrega pedidos (opcionalmente filtrando por lista de status), com itens
-// As cotações e seus itens são carregados em consultas separadas para evitar cache de schema.
+// Carrega pedidos (opcionalmente filtrando por lista de status), com itens e cotações.
 export async function fetchPedidos(statuses = null) {
   let q = supabase
     .from("pedidos")
@@ -23,23 +22,6 @@ export async function fetchPedidos(statuses = null) {
       .in("pedido_id", pedidoIds)
       .order("created_at");
     if (c1) throw c1;
-
-    const cotIds = (cotacoes || []).map((c) => c.id);
-    if (cotIds.length) {
-      const { data: cotItens, error: c2 } = await supabase
-        .from("cotacao_itens")
-        .select("*")
-        .in("cotacao_id", cotIds);
-      if (c2) throw c2;
-
-      const itensPorCot = {};
-      (cotItens || []).forEach((ci) => {
-        if (!itensPorCot[ci.cotacao_id]) itensPorCot[ci.cotacao_id] = [];
-        itensPorCot[ci.cotacao_id].push(ci);
-      });
-
-      (cotacoes || []).forEach((c) => (c.itens = itensPorCot[c.id] || []));
-    }
 
     const cotPorPed = {};
     (cotacoes || []).forEach((c) => {
