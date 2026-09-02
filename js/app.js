@@ -5,6 +5,7 @@ import { requireAuth, logout } from "./auth.js";
 import { ROLE_LABELS, supabase } from "./supabase.js";
 import { bindThemeButton } from "./theme.js";
 import { esc } from "./ui.js";
+import { startRealtime } from "./realtime.js";
 
 // Módulos (cada um exporta uma função render(container, profile))
 import * as requisicoes from "./requisicoes.js";
@@ -220,12 +221,14 @@ async function atualizarBadges() {
     map["fin_realizados"] = supabase.from("pedidos").select("id", { count: "exact", head: true }).in("status", ["pago", "concluido"]).then(({ count }) => count || 0);
   }
 
-  for (const [id, prom] of Object.entries(map)) {
-    const span = document.getElementById(`badge-${id}`);
-    if (!span) continue;
-    const n = await prom;
-    if (n > 0) span.textContent = `(${n})`;
-  }
+  await Promise.all(
+    Object.entries(map).map(async ([id, prom]) => {
+      const span = document.getElementById(`badge-${id}`);
+      if (!span) return;
+      const n = await prom;
+      span.textContent = n > 0 ? `(${n})` : "";
+    })
+  );
 }
 
 async function navigate(id) {
@@ -262,6 +265,9 @@ async function init() {
 
   window.addEventListener("popstate", () => navigate(location.pathname.slice(1)));
   navigate(location.pathname.slice(1));
+
+  // Inicia notificações em tempo real (Supabase Realtime + polling fallback)
+  startRealtime(profile, { onBadgeUpdate: atualizarBadges });
 }
 
 init();
