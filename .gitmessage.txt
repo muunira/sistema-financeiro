@@ -1,9 +1,0 @@
-Adiciona manifest.json para PWA com icone do app.
-
-- Cria manifest.json com nome, icone e start_url
-- Vincula manifest em index.html e app.html
-- Define theme-color
-
-Generated with Devin (https://devin.ai)
-
-Co-Authored-By: Devin <158243242+devin-ai-integration[bot]@users.noreply.github.com>
