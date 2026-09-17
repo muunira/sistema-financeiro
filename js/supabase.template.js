@@ -41,6 +41,7 @@ export const SETORES = [
   "Compras",
   "Diretoria",
   "Departamento Pessoal",
+  "Depósito",
   "Estofados",
   "Faturamento",
   "Financeiro",
