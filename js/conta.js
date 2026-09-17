@@ -20,10 +20,10 @@ function draw() {
       <div class="card-head"><h3>Meus dados</h3></div>
       <form id="form-nome" class="inline-form">
         <label>Nome<input name="nome" value="${esc(profile.nome)}" required /></label>
-        <label>E-mail<input name="email" type="email" value="${esc(profile.email)}" required /></label>
+        <label>Login<input name="email" type="text" value="${esc(profile.email)}" readonly disabled /></label>
         <button type="submit" class="btn">Salvar dados</button>
       </form>
-      <p class="muted">A alteração de e-mail pode exigir confirmação por e-mail.</p>
+      <p class="muted">O login segue o padrão do setor e só pode ser alterado pelo administrador.</p>
     </section>
 
     <section class="card">
@@ -44,20 +44,12 @@ function draw() {
 async function salvarDados(e) {
   e.preventDefault();
   const nome = e.target.nome.value.trim();
-  const email = e.target.email.value.trim();
   if (!nome) return toast("Informe o nome.", "error");
-  if (!email) return toast("Informe o e-mail.", "error");
 
-  const { error: e1 } = await supabase.from("profiles").update({ nome, email }).eq("id", profile.id);
+  const { error: e1 } = await supabase.from("profiles").update({ nome }).eq("id", profile.id);
   if (e1) return toast("Erro: " + e1.message, "error");
 
-  if (email !== profile.email) {
-    const { error: e2 } = await supabase.auth.updateUser({ email });
-    if (e2) return toast("Erro ao atualizar e-mail no auth: " + e2.message, "error");
-  }
-
   profile.nome = nome;
-  profile.email = email;
 
   const meta = document.querySelector("#user-info .user-meta strong");
   const avatar = document.querySelector("#user-info .avatar");

@@ -3,6 +3,33 @@
 // =====================================================================
 import { supabase, SUPABASE_URL } from "./supabase.js";
 
+// Domínio interno usado nos logins (não precisa existir de verdade)
+export const LOGIN_DOMAIN = "empresa.local";
+
+// Converte um texto (ex.: "Assistência Técnica") no slug do login ("assistencia.tecnica")
+export function loginSlug(txt) {
+  return (txt || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ".")
+    .replace(/^\.+|\.+$/g, "");
+}
+
+// Login padrão de um setor: setor@empresa.local
+export function setorLogin(setor) {
+  const slug = loginSlug(setor);
+  return slug ? `${slug}@${LOGIN_DOMAIN}` : "";
+}
+
+// Aceita "compras" ou "compras@empresa.local" e devolve sempre o e-mail completo
+export function toLoginEmail(input) {
+  const v = (input || "").trim();
+  if (!v) return "";
+  if (v.includes("@")) return v.toLowerCase();
+  return setorLogin(v);
+}
+
 // Verifica se o Supabase foi configurado
 export function isConfigured() {
   return SUPABASE_URL && !SUPABASE_URL.startsWith("COLE_AQUI");
@@ -14,8 +41,9 @@ export async function getSession() {
   return data.session;
 }
 
-// Faz login com email e senha
-export async function login(email, password) {
+// Faz login com usuário (setor) ou e-mail completo + senha
+export async function login(usuario, password) {
+  const email = toLoginEmail(usuario);
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) throw error;
   return data;

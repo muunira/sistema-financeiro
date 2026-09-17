@@ -168,13 +168,32 @@ Execute também `migrations/supabase_migration_10.sql` no SQL Editor. Ele dá pe
 
 Execute também `migrations/supabase_migration_09.sql` no SQL Editor. Ele adiciona o campo `setor` ao perfil e faz o gatilho de criação gravar o setor escolhido pelo admin. No cadastro de usuários passa a existir um campo **Setor** com a lista fixa da empresa (Assistência Técnica, Cobrança, Comercial, Compras, Diretoria, Departamento Pessoal, Estofados, Faturamento, Financeiro, Fiscal, Logística, Marketing, Recursos Humanos, Representantes, Televendas).
 
+## 2.10 Padrão de login por setor (migração 30)
+
+O login não é mais um e-mail real: é o **setor** dentro do domínio interno `empresa.local`.
+
+- Formato: `setor@empresa.local` — ex.: `compras@empresa.local`, `ti@empresa.local`, `assistencia.tecnica@empresa.local`.
+- Na tela de login basta digitar o setor (ex.: `compras`); o sistema completa `@empresa.local` automaticamente.
+- No cadastro de usuários (tela **Usuários**), o campo **Login** é preenchido automaticamente ao escolher o setor. Se o setor já tiver login, acrescente um número (`compras2@empresa.local`).
+- Na tabela de usuários o **Login** é editável para **todos** os usuários (inclusive outros administradores): altere o campo e clique em **Salvar** (ou Enter). Digitando só o setor, o domínio é completado.
+- Em **Minha conta** o login é somente leitura; só o admin altera.
+- A edição usa a Edge Function `update-user-login` (service role). Faça o deploy uma vez:
+
+  ```powershell
+  supabase functions deploy update-user-login --project-ref SEU_PROJECT_REF
+  ```
+
+  Ela exige que quem chama tenha `role = 'admin'`; o admin pode alterar o login de qualquer usuário.
+- Como o domínio é fictício, mantenha *Confirm email* **desligado** no Supabase.
+
+Para padronizar quem já está cadastrado, execute `migrations/supabase_migration_30.sql` no SQL Editor. Ele renomeia `auth.users.email` e `profiles.email` para `<setor>@empresa.local` (o usuário `admin` não é alterado), marca os e-mails como confirmados e lista os logins finais para conferência. **As senhas não mudam** — só avise cada setor do novo login.
+
 ## 3. Ajustar a autenticação
 
 Em **Authentication → Providers → Email**:
 
 - Deixe **Email** habilitado.
-- **Desligue** a opção *"Confirm email"* (Confirmar e-mail). Assim os usuários criados pelo admin já entram direto com a senha inicial.
-  - Se preferir manter a confirmação ligada, cada usuário precisará confirmar o e-mail antes do primeiro login.
+- **Desligue** a opção *"Confirm email"* (Confirmar e-mail). Isso é obrigatório no padrão `@empresa.local`, pois o domínio não recebe e-mails.
 
 ## 4. Criar o primeiro administrador
 

@@ -260,6 +260,13 @@ input:disabled { background: #1b2436; color: var(--muted); }
 .theme-light .row-alert { background: #fff1f2 !important; }
 .row-muted { opacity: .5; }
 
+.cell-login { white-space: nowrap; }
+.cell-login input {
+  width: 15rem; max-width: 100%; padding: .35rem .5rem; font-size: .85rem;
+  border: 1px solid var(--border); border-radius: 6px;
+}
+.cell-login .btn-link { margin-left: .4rem; }
+
 /* ---------- PEDIDOS ---------- */
 .pedido-box {
   border: 1px solid var(--border); border-radius: var(--radius-sm);
