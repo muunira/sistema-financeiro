@@ -21,7 +21,7 @@ import * as relatoriosMensais from "./relatorios_mensais.js";
 import * as auditoria from "./auditoria.js";
 import * as zerarPedidos from "./zerar_pedidos.js";
 
-const TODOS = ["admin", "lider", "estoque", "compras", "diretoria", "financeiro"];
+const TODOS = ["admin", "lider", "estoque", "compras", "estoque_compras", "diretoria", "financeiro"];
 
 // Ícones (SVG inline, herdam a cor via currentColor)
 const ICONS = {
