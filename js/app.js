@@ -150,6 +150,13 @@ function availableViews() {
       });
     const otherViews = views.filter(([, v]) => v.group !== comprasGroup);
     views = [...comprasViews, ...otherViews];
+
+    // "Nova requisição" fica como primeiro item do menu
+    const novaIdx = views.findIndex(([id]) => id === "req_nova");
+    if (novaIdx > 0) {
+      const [nova] = views.splice(novaIdx, 1);
+      views.unshift(nova);
+    }
   }
 
   return views;
