@@ -45,6 +45,8 @@ async function loadAjustesPendentes() {
 // Pedidos aguardando a chegada física dos itens:
 // - 'aguardando_recebimento': fluxo "pagar depois" (receber antes de pagar)
 // - 'pago': fluxo padrão (pagar antes de receber)
+// No fluxo "pagar depois", 'pago' significa que já foi recebido — não pode
+// voltar para esta lista (evitaria recebimento/baixa em dobro).
 async function loadAReceber() {
   const { data, error } = await supabase
     .from("pedidos")
@@ -52,7 +54,7 @@ async function loadAReceber() {
     .in("status", ["pago", "aguardando_recebimento"])
     .order("numero", { ascending: false });
   if (error) throw error;
-  aReceber = data || [];
+  aReceber = (data || []).filter((p) => p.status === "aguardando_recebimento" || !p.pagar_apos);
 }
 
 async function loadUltimosRecebimentos() {
@@ -198,6 +200,7 @@ async function excluirProduto(id) {
 async function confirmarRecebimento(id) {
   const pedido = aReceber.find((p) => p.id === id);
   if (!pedido) return;
+  if (pedido.status === "pago" && pedido.pagar_apos) return toast("Este pedido já foi recebido e pago.", "error");
   if (!["pago", "aguardando_recebimento"].includes(pedido.status)) return toast("Este pedido não está aguardando recebimento.", "error");
   const ok = await confirmDialog(
     "Confirmar recebimento",

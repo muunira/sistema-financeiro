@@ -33,9 +33,9 @@ function notify(role, table, payload) {
       msg = `Novo pedido #${numero} aguarda cotação`;
     } else if (status === "aguardando_diretoria" && ["diretoria", "admin"].includes(role)) {
       msg = `Pedido #${numero} aguarda aprovação`;
-    } else if (["aguardando_pagamento", "recebido"].includes(status) && ["financeiro", "admin"].includes(role)) {
+    } else if ((status === "aguardando_pagamento" || (status === "recebido" && row?.pagar_apos)) && ["financeiro", "admin"].includes(role)) {
       msg = `Pedido #${numero} aguarda pagamento`;
-    } else if (["pago", "aguardando_recebimento"].includes(status) && ["estoque", "estoque_compras", "admin"].includes(role)) {
+    } else if ((status === "aguardando_recebimento" || (status === "pago" && !row?.pagar_apos)) && ["estoque", "estoque_compras", "admin"].includes(role)) {
       msg = `Pedido #${numero} aguarda recebimento`;
     } else if (status === "conferido" && ["lider", "admin"].includes(role)) {
       msg = `Pedido #${numero} foi conferido`;

@@ -148,9 +148,18 @@ function draw(aprovados, outros) {
     toggleForma(f);
   });
   container.querySelectorAll("[data-pagar-apos]").forEach((chk) =>
-    chk.addEventListener("change", () => {
-      const label = container.querySelector(`[data-dias-label="${chk.dataset.pagarApos}"]`);
+    chk.addEventListener("change", async () => {
+      const pedidoId = chk.dataset.pagarApos;
+      const label = container.querySelector(`[data-dias-label="${pedidoId}"]`);
       if (label) label.style.display = chk.checked ? "block" : "none";
+      const { error } = await supabase.from("pedidos").update({ pagar_apos: chk.checked }).eq("id", pedidoId);
+      if (error) {
+        chk.checked = !chk.checked;
+        if (label) label.style.display = chk.checked ? "block" : "none";
+        return toast("Erro ao salvar: " + error.message, "error");
+      }
+      const pedido = pendentes.find((p) => p.id === pedidoId);
+      if (pedido) pedido.pagar_apos = chk.checked;
     }));
   const campoColuna = {
     "num-sol": "numero_solicitacao",

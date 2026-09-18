@@ -23,7 +23,8 @@ export async function render(el, prof, aba = "pagar") {
   profile = prof;
   abaAtiva = aba;
   const todos = await fetchPedidos();
-  const aPagar = todos.filter((p) => ["aguardando_pagamento", "recebido"].includes(p.status));
+  const aPagar = todos.filter((p) =>
+    p.status === "aguardando_pagamento" || (p.status === "recebido" && p.pagar_apos));
   draw(aPagar, todos);
 }
 

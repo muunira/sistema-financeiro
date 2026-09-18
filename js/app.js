@@ -221,7 +221,7 @@ async function atualizarBadges() {
   }
   if (["estoque", "compras", "estoque_compras", "diretoria", "admin"].includes(profile.role)) {
     map["est_produtos"] = contar("produtos");
-    map["est_recebimento"] = supabase.from("pedidos").select("id", { count: "exact", head: true }).in("status", ["pago", "aguardando_recebimento"]).then(({ count }) => count || 0);
+    map["est_recebimento"] = supabase.from("pedidos").select("id", { count: "exact", head: true }).or("status.eq.aguardando_recebimento,and(status.eq.pago,pagar_apos.eq.false)").then(({ count }) => count || 0);
     map["est_ajustes"] = contar("ajustes_estoque", { status: "pendente" });
     map["comp_cotar"] = supabase.from("pedidos").select("id", { count: "exact", head: true }).in("status", ["solicitado", "em_cotacao"]).then(({ count }) => count || 0);
     map["comp_aprovados"] = contar("pedidos", { status: "aprovado" });
@@ -233,7 +233,7 @@ async function atualizarBadges() {
     map["dir_ajustes"] = contar("ajustes_estoque", { status: "pendente" });
   }
   if (["financeiro", "admin"].includes(profile.role)) {
-    map["fin_pagar"] = supabase.from("pedidos").select("id", { count: "exact", head: true }).in("status", ["aguardando_pagamento", "recebido"]).then(({ count }) => count || 0);
+    map["fin_pagar"] = supabase.from("pedidos").select("id", { count: "exact", head: true }).or("status.eq.aguardando_pagamento,and(status.eq.recebido,pagar_apos.eq.true)").then(({ count }) => count || 0);
     map["fin_realizados"] = supabase.from("pedidos").select("id", { count: "exact", head: true }).in("status", ["pago", "concluido"]).then(({ count }) => count || 0);
   }
 
