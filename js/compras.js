@@ -9,6 +9,7 @@ import { getProdutos, getFornecedores, invalidateProdutos, invalidateFornecedore
 let container, profile, pendentes = [], aprovados = [], aConferir = [], outros = [], fornecedores = [], produtos = [], solicitacoesProduto = [];
 let abaAtiva = "cotar";
 let fornModal = null;
+const expandidos = new Set();
 
 function mostrarAba(nome) {
   abaAtiva = nome;
@@ -182,6 +183,17 @@ function draw(aprovados, outros) {
     b.addEventListener("click", () => atenderDoEstoque(b.dataset.atenderEstoque)));
   container.querySelectorAll("[data-boleto]").forEach((b) =>
     b.addEventListener("click", () => abrirBoleto(b.dataset.boleto)));
+  container.querySelectorAll("[data-expandir]").forEach((el) =>
+    el.addEventListener("click", () => {
+      const id = el.dataset.expandir;
+      const detalhes = container.querySelector(`[data-detalhes="${id}"]`);
+      const seta = el.querySelector(".expand-seta");
+      if (!detalhes) return;
+      const abrir = detalhes.style.display === "none";
+      detalhes.style.display = abrir ? "block" : "none";
+      if (seta) seta.style.transform = `rotate(${abrir ? 90 : 0}deg)`;
+      if (abrir) expandidos.add(id); else expandidos.delete(id);
+    }));
   container.querySelectorAll("[data-tab]").forEach((b) =>
     b.addEventListener("click", () => mostrarAba(b.dataset.tab)));
   mostrarAba(abaAtiva);
@@ -245,16 +257,18 @@ function cardPedido(p, fornList) {
     return produto && Number(produto.quantidade_atual || 0) >= Number(i.quantidade);
   }) && (p.pedido_itens || []).length > 0 && (p.pedido_itens || []).every((i) => i.produto_id);
 
+  const aberto = expandidos.has(p.id);
   return `<div class="pedido-box">
-    <div class="pedido-top" style="display:flex;justify-content:space-between;align-items:flex-start">
+    <div class="pedido-top" data-expandir="${p.id}" style="display:flex;justify-content:space-between;align-items:flex-start;cursor:pointer">
       <div>
-        <div style="font-size:1.1rem;font-weight:600">Pedido #${p.numero}</div>
+        <div style="font-size:1.1rem;font-weight:600"><span class="expand-seta" style="display:inline-block;transition:transform .15s;transform:rotate(${aberto ? 90 : 0}deg)">▸</span> Pedido #${p.numero}</div>
         <div class="muted">Setor: ${esc(p.criador?.setor || "-")}</div>
         <div class="muted">Solicitado por: ${esc(p.criador?.nome || "-")} em ${fmtDate(p.created_at)}</div>
       </div>
       ${statusBadge(p.status)}
     </div>
 
+    <div class="pedido-detalhes" data-detalhes="${p.id}" style="display:${aberto ? "block" : "none"}">
     <div class="pedido-campos" style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin:.8rem 0;align-items:start">
       <label>Nº da solicitação
         <input data-num-sol="${p.id}" value="${esc(p.numero_solicitacao || "")}" placeholder="Ex.: 12345" required />
@@ -324,6 +338,7 @@ function cardPedido(p, fornList) {
         </button>
         ${p.cotacoes.length ? "" : `<span class="muted">Adicione ao menos uma cotação.</span>`}
       `}
+    </div>
     </div>
   </div>`;
 }
