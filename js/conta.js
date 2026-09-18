@@ -46,7 +46,7 @@ async function salvarDados(e) {
   const nome = e.target.nome.value.trim();
   if (!nome) return toast("Informe o nome.", "error");
 
-  const { error: e1 } = await supabase.from("profiles").update({ nome }).eq("id", profile.id);
+  const { error: e1 } = await supabase.rpc("update_own_name", { nome });
   if (e1) return toast("Erro: " + e1.message, "error");
 
   profile.nome = nome;
