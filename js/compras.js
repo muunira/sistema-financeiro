@@ -377,16 +377,18 @@ function cardAprovado(p) {
     ? `<div style="margin-top:.4rem">${boletosAnexados.map((b, i) => `<button type="button" class="btn-link" data-boleto="${esc(b)}">Ver boleto ${i + 1}</button>`).join(" ")}</div>`
     : "";
 
+  const aberto = expandidos.has(p.id);
   return `<div class="pedido-box">
-    <div class="pedido-top" style="display:flex;justify-content:space-between;align-items:flex-start">
+    <div class="pedido-top" data-expandir="${p.id}" style="display:flex;justify-content:space-between;align-items:flex-start;cursor:pointer">
       <div>
-        <div style="font-size:1.1rem;font-weight:600">Pedido #${p.numero}</div>
+        <div style="font-size:1.1rem;font-weight:600"><span class="expand-seta" style="display:inline-block;transition:transform .15s;transform:rotate(${aberto ? 90 : 0}deg)">▸</span> Pedido #${p.numero}</div>
         <div class="muted">Setor: ${esc(p.criador?.setor || "-")}</div>
         <div class="muted">Fornecedor: ${esc(p.fornecedor || "-")}</div>
         <div class="muted">Aprovado em: ${fmtDate(p.data_decisao)}</div>
       </div>
       ${statusBadge(p.status)}
     </div>
+    <div class="pedido-detalhes" data-detalhes="${p.id}" style="display:${aberto ? "block" : "none"}">
     <p><strong>Valor final:</strong> ${fmtMoney(total)}</p>
     <p><strong>Nº solicitação:</strong> ${esc(p.numero_solicitacao || "-")}</p>
     <p><strong>Especificação de Compra:</strong> ${esc(p.tipo || "-")}</p>
@@ -426,6 +428,7 @@ function cardAprovado(p) {
 
       <button type="submit" class="btn btn-ok">${p.pagar_apos ? "Enviar para Estoque (recebimento)" : "Enviar para Financeiro (pagamento)"}</button>
     </form>
+    </div>
   </div>`;
 }
 
